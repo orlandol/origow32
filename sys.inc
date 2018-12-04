@@ -1,4 +1,31 @@
 
+; ====================
+; Win32 error messages
+; ====================
+
+  ;
+  ; DWORD WINAPI GetLastError()
+  ;
+  extern GetLastError
+  import GetLastError kernel32.dll
+
+  ;
+  ; DWORD FormatMessage( DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId,
+  ;   DWORD dwLanguageId, LPTSTR lpBuffer, DWORD nSize, va_list *Arguments );
+  ;
+  extern FormatMessageA
+  import FormatMessageA kernel32.dll
+
+; ==================
+; Win32 command-line
+; ==================
+
+  ;
+  ; LPTSTR WINAPI GetCommandLine()
+  ;
+  extern GetCommandLineA
+  import GetCommandLineA kernel32.dll
+
 ; =====================
 ; Win32 threads/process
 ; =====================
@@ -45,4 +72,93 @@
 ; ==============
 ; Win32 file I/O
 ; ==============
+
+  %define CREATE_ALWAYS     2
+  %define CREATE_NEW        1
+  %define OPEN_ALWAYS       4
+  %define OPEN_EXISTING     3
+  %define TRUNCATE_EXISTING 5
+
+  %define FILE_BEGIN   0
+  %define FILE_CURRENT 1
+  %define FILE_END     2
+
+  %define MAX_PATH 260
+
+  ;
+  ; HANDLE CreateFileA( LPCSTR lpFileName, DWORD dwDesiredAccess,
+  ;   DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+  ;   DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes,
+  ;   HANDLE hTemplateFile )
+  ;
+  extern CreateFileA
+  import CreateFileA kernel32.dll
+
+  ;
+  ; BOOL CloseHandle( HANDLE hObject )
+  ;
+  extern CloseHandle
+  import CloseHandle kernel32.dll
+
+  ;
+  ; BOOL ReadFile( HANDLE hFile, LPVOID lpBuffer,
+  ;   DWORD nNumberOfBytesToRead, LPDWORD lpNumberofBytesRead,
+  ;   LPOVERLAPPED lpOverlapped )
+  ;
+  extern ReadFile
+  import ReadFile kernel32.dll
+
+  ;
+  ; BOOL WriteFile( HANDLE hFile, LPVOID lpBuffer,
+  ;   DWORD nNumberOfBytesToWrite, LPDWORD lpNumberofBytesWritten,
+  ;   LPOVERLAPPED lpOverlapped )
+  ;
+  extern WriteFile
+  import WriteFile kernel32.dll
+
+  ;
+  ; BOOL SetEndOfFile( HANDLE hFile )
+  ;
+  extern SetEndOfFile
+  import SetEndOfFile kernel32.dll
+
+  ;
+  ; DWORD SetFilePointer( HANDLE hFile, LONG lDistanceToMove,
+  ;   PLONG lpDistanceToMoveHigh, DWORD dwMoveMethod );
+  ;
+  extern SetFilePointer
+  import SetFilePointer kernel32.dll
+
+  ;
+  ; DWORD GetFileSize( HANDLE hFile, LPDWORD lpFileSizeHigh )
+  ;
+  extern GetFileSize
+  import GetFileSize kernel32.dll
+
+  ;
+  ; BOOL CreateDirectoryA( LPCSTR lpPathName,
+  ;   LPSECURITY_ATTRIBUTES lpSecurityAttributes );
+  ;
+  extern CreateDirectoryA
+  import CreateDirectoryA kernel32.dll
+
+  ;
+  ; BOOL RemoveDirectoryA( LPCSTR lpPathName )
+  ;
+  extern RemoveDirectoryA
+  import RemoveDirectoryA kernel32.dll
+
+; =================
+; Win32 Console I/O
+; =================
+
+  %define STD_INPUT_HANDLE  (-10)
+  %define STD_OUTPUT_HANDLE (-11)
+  %define STD_ERROR_HANDLE  (-12)
+
+  ;
+  ; HANDLE WINAPI GetStdHandle( DWORD nStdHandle )
+  ;
+  extern GetStdHandle
+  import GetStdHandle kernel32.dll
 
