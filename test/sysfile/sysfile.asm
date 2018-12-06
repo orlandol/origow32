@@ -16,8 +16,19 @@ segment .text use32
   call    [GetStdHandle]
   mov     [stdOut], eax
 
-  push    dword digits
-  push    dword [lenDigits]
+  call    [GetCommandLineA]
+  push    eax
+  mov     esi, eax
+  xor     ecx, ecx
+ .LenLoop:
+  mov     al, [esi]
+  inc     esi
+  test    al, al
+  jz      .ExitLoop
+  inc     ecx
+  jmp     .LenLoop
+ .ExitLoop:
+  push    ecx
   call    sysecho
 
   push    dword 0
