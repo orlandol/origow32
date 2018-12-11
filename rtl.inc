@@ -87,14 +87,14 @@ CommandLineLength:
   ret
 
 ;
-; func unsigned CountArgs( string commandLine; usize length )
+; func unsigned ArgCount( string commandLine; usize commandLength )
 ;
-CountArgs:
+ArgCount:
   push    ebp
   mov     ebp, esp
 
-  %define .commandLine ebp + 12
-  %define .length      ebp + 8
+  %define .commandLine   ebp + 12
+  %define .commandLength ebp + 8
 
   mov     esp, ebp
   pop     ebp

@@ -13,8 +13,6 @@ segment .text use32
   push    ebp
   mov     ebp, esp
 
-  call    CommandLineLength
-
   mov     esp, ebp
   pop     ebp
 
