@@ -3,11 +3,11 @@
 
   BITS 32
 
-segment .text use32
-
   %include "sys.inc"
   %include "rtl.inc"
   %include "chtable.inc"
+
+segment .text use32
 
 ..start:
   push    ebp
