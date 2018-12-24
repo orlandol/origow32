@@ -17,11 +17,11 @@ segment .text use32
   call    [GetStdHandle]
   mov     [stdOut], eax
 
-  %define tempWritten ebp - 4
+  %define .tempWritten ebp - 4
   push    dword 0
 
   push    dword 0
-  lea     eax, [tempWritten]
+  lea     eax, [.tempWritten]
   push    eax
   push    dword [helloLen]
   push    hello
