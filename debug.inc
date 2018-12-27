@@ -6,7 +6,7 @@ segment .text use32
 ;
 dump:
   push    ebp
-  mov     esp, ebp
+  mov     ebp, esp
 
   ; ebp == (esp - 8) ?
   %define .dumpEBP ebp + 0
@@ -35,20 +35,75 @@ dump:
 
   ; uint(ebx)
   push    dword (dumpLine2 +  41)
-  push    dword [.dumpEAX]
+  push    dword [.dumpEBX]
   call    dumpHex
 
   push    dword (dumpLine2 + 51)
-  push    dword [.dumpEAX]
+  push    dword [.dumpEBX]
   call    dumpUint
 
+  ; uint(ecx)
+  push    dword (dumpLine3 +  10)
+  push    dword [.dumpECX]
+  call    dumpHex
+
+  push    dword (dumpLine3 + 20)
+  push    dword [.dumpECX]
+  call    dumpUint
+
+  ; uint(edx)
+  push    dword (dumpLine3 +  41)
+  push    dword [.dumpEDX]
+  call    dumpHex
+
+  push    dword (dumpLine3 + 51)
+  push    dword [.dumpEDX]
+  call    dumpUint
+
+  ; uint(esi)
+  push    dword (dumpLine4 +  10)
+  push    dword [.dumpESI]
+  call    dumpHex
+
+  push    dword (dumpLine4 + 20)
+  push    dword [.dumpESI]
+  call    dumpUint
+
+  ; uint(edi)
+  push    dword (dumpLine4 +  41)
+  push    dword [.dumpEDI]
+  call    dumpHex
+
+  push    dword (dumpLine4 + 51)
+  push    dword [.dumpEDI]
+  call    dumpUint
+
+  ; uint(ebp)
+  push    dword (dumpLine5 +  10)
+  push    dword [.dumpEBP]
+  call    dumpHex
+
+  push    dword (dumpLine5 + 20)
+  push    dword [.dumpEBP]
+  call    dumpUint
+
+  ; uint(esp)
+  push    dword (dumpLine5 +  41)
+  push    ebp
+  call    dumpHex
+
+  push    dword (dumpLine5 + 51)
+  push    ebp
+  call    dumpUint
+
+  ; Display the values
   push    dumpLine
   call    dumpEcho
 
   push    dword 0
   call    [ExitProcess]
 
-  mov     ebp, esp
+  mov     esp, ebp
   pop     ebp
   ret
 
@@ -98,20 +153,50 @@ dumpEcho:
   ret 4
 
 ;
-; func string dumpUint( uint value )
+; func string[10] dumpUint( uint value )
 ;
 dumpUint:
   push    ebp
   mov     ebp, esp
 
-  %define .value ebp + 8
+  push    edi
+  push    edx
+  push    ecx
+
+  %define .result ebp + 12
+  %define .value  ebp + 8
+
+  mov     eax, [.value]
+  mov     ecx, 10
+
+  mov     edi, [.result]
+  test    edi, edi
+  jz      .Exit
+  add     edi, 9
+
+ .ConvertLoop:
+  test    eax, eax
+  jz      .Exit
+
+  xor     edx, edx
+  div     ecx
+
+  add     dl, '0'
+  mov     [edi], dl
+  dec     edi
+  jmp     .ConvertLoop
+
+ .Exit:
+  pop     ecx
+  pop     edx
+  pop     edi
 
   mov     esp, ebp
   pop     ebp
-  ret 4
+  ret 8
 
 ;
-; func string dumpHex( uint value )
+; func string[10] dumpHex( uint value )
 ;
 dumpHex:
   push    ebp
@@ -121,7 +206,7 @@ dumpHex:
 
   mov     esp, ebp
   pop     ebp
-  ret 4
+  ret 8
 
 section .data use32
 

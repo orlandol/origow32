@@ -18,6 +18,7 @@ segment .text use32
   mov     edx, 0x0D0E0F11
   mov     esi, 0x12131415
   mov     edi, 0x16171819
+  mov     ebp, 0x20212223
   call    dump
 
   mov     esp, ebp
