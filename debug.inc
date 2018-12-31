@@ -196,14 +196,36 @@ dumpUint:
   ret 8
 
 ;
-; func string[10] dumpHex( uint value )
+; func string[8] dumpHex( uint value )
 ;
 dumpHex:
   push    ebp
   mov     ebp, esp
 
-  %define .value ebp + 8
+  %define .result ebp + 12
+  %define .value  ebp + 8
 
+  mov     eax, [.value]
+  mov     ecx, 8
+
+  mov     edi, [.result]
+  test    edi, edi
+  jz      .Exit
+  add     edi, 7
+
+ .ConvertLoop:
+  mov     ebx, eax
+  shr     eax, 4
+  and     ebx, 0x0000000F
+
+  mov     dl, [ebx + dumpHexDigits]
+  mov     [edi], dl
+  dec     edi
+
+  dec     ecx
+  jnz     .ConvertLoop
+
+ .Exit:
   mov     esp, ebp
   pop     ebp
   ret 8
