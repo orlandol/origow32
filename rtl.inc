@@ -14,6 +14,18 @@ InitRTL:
   push    ebp
   mov     ebp, esp
 
+  push    dword STD_INPUT_HANDLE
+  call    [GetStdHandle]
+  mov     [stdIn], eax
+
+  push    dword STD_OUTPUT_HANDLE
+  call    [GetStdHandle]
+  mov     [stdOut], eax
+
+  push    dword STD_ERROR_HANDLE
+  call    [GetStdHandle]
+  mov     [stdErr], eax
+
   mov     esp, ebp
   pop     ebp
   ret
@@ -199,8 +211,27 @@ echostring:
   push    ebp
   mov     ebp, esp
 
-  %define .strValue ebp + 4
+  %define .strValue ebp + 8
 
+  %define .tempWritten ebp - 4
+  push    dword 0
+
+  push    esi
+
+  mov     esi, [.strValue]
+  test    esi, esi
+  jz      .Exit
+
+  push    dword 0
+  lea     eax, [.tempWritten]
+  push    eax
+  push    dword [esi - 4] ; length
+  push    esi
+  push    dword [stdOut]
+  call    [WriteFile]
+
+ .Exit
+  pop     esi
   mov     esp, ebp
   pop     ebp
   ret 4
@@ -212,8 +243,49 @@ echouint:
   push    ebp
   mov     ebp, esp
 
-  %define .uintValue ebp + 4
+  %define .uintValue ebp + 8
 
+  %define .valueStr ebp - 12
+  push    dword 0
+  push    dword 0
+  push    dword 0
+
+  %define .tempWritten ebp - 16
+  push    dword 0
+
+  push    ebx
+  push    ecx
+  push    edi
+
+  mov     eax, [.uintValue]
+  lea     edi, [.valueStr + 11]
+  mov     ebx, 10
+  xor     ecx, ecx
+
+ .ConvertLoop:
+  xor     edx, edx
+  div     ebx
+  add     dl, '0'
+  mov     [edi], dl
+  inc     ecx
+  test    eax, eax
+  jz      .DoneConverting
+  dec     edi
+  jmp     .ConvertLoop
+ .DoneConverting:
+
+  push    dword 0
+  lea     eax, [.tempWritten]
+  push    eax
+  push    ecx
+  push    edi
+  push    dword [stdOut]
+  call    [WriteFile]
+
+ .Exit:
+  pop     edi
+  pop     ecx
+  pop     ebx
   mov     esp, ebp
   pop     ebp
   ret 4
@@ -223,6 +295,9 @@ segment .data use32
   stdIn:  dd 0
   stdOut: dd 0
   stdErr: dd 0
+
+        dd 2
+  eoln: db 13, 10, 0
 
 ; =======
 ; Strings

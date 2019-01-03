@@ -13,6 +13,8 @@ segment .text use32
   push    ebp
   mov     ebp, esp
 
+  call    InitRTL
+
   mov     esp, ebp
   pop     ebp
 

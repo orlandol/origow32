@@ -1,6 +1,8 @@
 Test Program Status
 -------------------
-chartab - Created
-rtlargs - In progress
-sysecho - Done
-sysfile - In progress
+sysecho  - Done
+rtlecho  - Done
+sysalloc - Pending
+chartab  - Created
+rtlargs  - In progress
+sysfile  - In progress
