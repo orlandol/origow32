@@ -1,8 +1,9 @@
 Test Program Status
 -------------------
-sysecho  - Done
-rtlecho  - Done
-sysalloc - Pending
 chartab  - Created
+dbgdump  - Done
 rtlargs  - In progress
+rtlecho  - Done
+sysalloc - Done
+sysecho  - Done
 sysfile  - In progress
