@@ -14,6 +14,9 @@ segment .text use32
 
   call    InitRTL
 
+  ; TODO: Test allocating 0 bytes
+  ; TODO: Test resizing to 0 bytes
+
   ; Test memory allocation
   push    strAllocating
   call    sysecho

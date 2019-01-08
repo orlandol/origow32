@@ -124,22 +124,66 @@ segment .text use32
 alloc:
   push    ebp
   mov     ebp, esp
+  push    ecx
 
   %define .size ebp + 4
+  mov     ecx, [.size]
+  test    ecx, ecx
+  jz      .Exit
 
+  add     ecx, 4
+
+  push    ecx
+  push    LPTR
+  call    [LocalAlloc]
+
+  test    eax, eax
+  jz      .Exit
+
+  mov     ecx, [.size]
+  mov     [eax + 4], ecx
+  add     eax, 4
+
+ .Exit:
+  pop     ecx
   mov     esp, ebp
   pop     ebp
   ret 4
 
 ;
-; func free( @@pointer )
+; func free( ref pointer )
 ;
 free:
   push    ebp
   mov     ebp, esp
+  push    esi
+  push    edi
 
   %define .pointer ebp + 4
 
+  ; Load and validate reference pointer
+  mov     esi, [.pointer]
+  test    esi, esi
+  jz      .Exit
+
+  ; Load and validate pointer
+  mov     edi, [esi]
+  test    edi, edi
+  jz      .Exit
+
+  ; Offset and release memory
+  sub     edi, 4
+  push    edi
+  call    [LocalFree]
+
+  ; Set pointer to null if released
+  test    eax, eax
+  jnz     .Exit
+  mov     dword [edi], 0
+
+ .Exit:
+  pop     edi
+  pop     esi
   mov     esp, ebp
   pop     ebp
   ret 4
@@ -171,9 +215,9 @@ endstruc
 segment .text use32
 
 ;
-; method bool file.open( string fileName )
+; method bool fopen( string fileName )
 ;
-file.open:
+fopen:
   push    ebp
   mov     ebp, esp
 
@@ -185,9 +229,9 @@ file.open:
   ret 8
 
 ;
-; method bool file.create( string newFileName )
+; method bool fcreate( string newFileName )
 ;
-file.create:
+fcreate:
   push    ebp
   mov     ebp, esp
 

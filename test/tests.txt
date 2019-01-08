@@ -2,6 +2,7 @@ Test Program Status
 -------------------
 chartab  - Created
 dbgdump  - Done
+rtlalloc - In progress
 rtlargs  - In progress
 rtlecho  - Done
 sysalloc - Done
