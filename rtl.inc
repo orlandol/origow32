@@ -127,6 +127,7 @@ alloc:
   push    ecx
 
   %define .size ebp + 4
+
   mov     ecx, [.size]
   test    ecx, ecx
   jz      .Exit
@@ -149,6 +150,53 @@ alloc:
   mov     esp, ebp
   pop     ebp
   ret 4
+
+;
+; func @ realloc( @pointer; usize newSize )
+;
+realloc:
+  push    ebp
+  mov     ebp, esp
+
+  %define .newSize ebp + 8
+  %define .pointer ebp + 4
+
+  push    ecx
+  push    esi
+
+  mov     esi, [.pointer]
+  mov     ecx, [.newSize]
+
+  test    esi, esi
+  jz      .Exit
+
+  test    ecx, ecx
+  jz      .Exit
+
+  sub     esi, 4
+  add     ecx, 4
+
+  push    dword LMEM_MOVEABLE
+  push    dword ecx
+  push    dword esi
+  call    [LocalReAlloc]
+
+  test    eax, eax
+  jnz     .ResizeSucceeded
+  mov     eax, [.pointer]
+  jmp     .Exit
+
+ .ResizeSucceeded:
+  mov     ecx, [.newSize]
+  mov     [eax + 4], ecx
+  add     eax, 4
+
+ .Exit:
+  pop     esi
+  pop     ecx
+  mov     esp, ebp
+  pop     ebp
+  ret 8
 
 ;
 ; func free( ref pointer )
@@ -187,20 +235,6 @@ free:
   mov     esp, ebp
   pop     ebp
   ret 4
-
-;
-; func @ realloc( @@pointer; usize newSize )
-;
-realloc:
-  push    ebp
-  mov     ebp, esp
-
-  %define .pointer ebp + 8
-  %define .newSize ebp + 4
-
-  mov     esp, ebp
-  pop     ebp
-  ret 8
 
 ; ========
 ; File I/O

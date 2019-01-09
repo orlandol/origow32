@@ -16,6 +16,7 @@ segment .text use32
 
   ; TODO: Test allocating 0 bytes
   ; TODO: Test resizing to 0 bytes
+  ; TODO: Validate 2048 bytes immediately after resize
 
   ; Test memory allocation
   push    strAllocating

@@ -16,34 +16,98 @@ segment .text use32
 
   ; TODO: Test allocating 0 bytes
   ; TODO: Test resizing to 0 bytes
+  ; TODO: Validate 2048 bytes immediately after resize
 
   ; Test memory allocation
   push    strAllocating
   call    echostring
 
+  push    dword 2048
+  call    alloc
+
+  test    eax, eax
+  jnz     .MemoryAllocated
+  push    strFailed
+  call    echostring
+  push    dword 1
+  call    [ExitProcess]
+ .MemoryAllocated:
+  mov     [testPtr], eax
+
   ; Initialize memory
   push    strInitializing
   call    echostring
 
+  mov     edi, [testPtr]
+  mov     ecx, 2048/4
+  mov     eax, 0x5C5C5C5C
+  rep stosd
+
   ; Validate memory
   push    strValidating
   call    echostring
+
+  mov     edi, [testPtr]
+  mov     ecx, 2048/4
+  mov     eax, 0x5C5C5C5C
+  rep scasd
 
   ; Resize memory
   push    strResizing
   call    echostring
 
+  push    dword [testPtr]
+  push    dword 4096
+  call    realloc
+
+  test    eax, eax
+  jnz     .MemoryResized
+  push    strFailed
+  call    echostring
+  push    dword 4
+  call    [ExitProcess]
+ .MemoryResized:
+  mov     [testPtr], eax
+
   ; Initializing memory
   push    strInitializing
   call    echostring
+
+  mov     edi, [testPtr]
+  mov     ecx, 4096/4
+  mov     eax, 0xC1C1C1C1
+  rep stosd
 
   ; Validate memory
   push    strValidating
   call    echostring
 
+  mov     edi, [testPtr]
+  mov     ecx, 4096/4
+  mov     eax, 0xC1C1C1C1
+  rep scasd
+
+  jz      .Validated4096
+  push    strFailed
+  call    echostring
+  push    dword 3
+  call    [ExitProcess]
+ .Validated4096:
+
   ; Release memory
   push    strReleasing
   call    echostring
+
+  push    testPtr
+  call    free
+
+  test    eax, eax
+  jz      .MemoryReleased
+  push    strFailed
+  call    echostring
+  push    dword 4
+  call    [ExitProcess]
+ .MemoryReleased:
 
   ; Done
   push    strPassed
