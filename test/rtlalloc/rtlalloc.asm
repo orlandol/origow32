@@ -16,7 +16,6 @@ segment .text use32
 
   ; TODO: Test allocating 0 bytes
   ; TODO: Test resizing to 0 bytes
-  ; TODO: Validate 2048 bytes immediately after resize
 
   ; Test memory allocation
   push    strAllocating
@@ -52,6 +51,13 @@ segment .text use32
   mov     eax, 0x5C5C5C5C
   rep scasd
 
+  jz      .ValidatedInit2048
+  push    strFailed
+  call    echostring
+  push    dword 2
+  call    [ExitProcess]
+ .ValidatedInit2048:
+
   ; Resize memory
   push    strResizing
   call    echostring
@@ -64,10 +70,26 @@ segment .text use32
   jnz     .MemoryResized
   push    strFailed
   call    echostring
-  push    dword 4
+  push    dword 3
   call    [ExitProcess]
  .MemoryResized:
   mov     [testPtr], eax
+
+  ; Validate memory
+  push    strValidating
+  call    echostring
+
+  mov     edi, [testPtr]
+  mov     ecx, 2048/4
+  mov     eax, 0x5C5C5C5C
+  rep scasd
+
+  jz      .ValidatedRealloc2048
+  push    strFailed
+  call    echostring
+  push    dword 4
+  call    [ExitProcess]
+ .ValidatedRealloc2048:
 
   ; Initializing memory
   push    strInitializing
@@ -87,12 +109,12 @@ segment .text use32
   mov     eax, 0xC1C1C1C1
   rep scasd
 
-  jz      .Validated4096
+  jz      .ValidatedInit4096
   push    strFailed
   call    echostring
-  push    dword 3
+  push    dword 5
   call    [ExitProcess]
- .Validated4096:
+ .ValidatedInit4096:
 
   ; Release memory
   push    strReleasing
@@ -105,7 +127,7 @@ segment .text use32
   jz      .MemoryReleased
   push    strFailed
   call    echostring
-  push    dword 4
+  push    dword 6
   call    [ExitProcess]
  .MemoryReleased:
 
@@ -137,7 +159,7 @@ segment .data use32
   strReleasing:    db "Releasing memory...",13,10,0
 
                    dd 16
-  strFailed:       db 13,10,"Tests FAILED",13,10,0
+  strFailed:       db 13,10,"Test FAILED",13,10,0
 
                    dd 16
   strPassed:       db 13,10,"Tests passed",13,10,0
