@@ -142,7 +142,7 @@ alloc:
   jz      .Exit
 
   mov     ecx, [.size]
-  mov     [eax + 4], ecx
+  mov     [eax], ecx
   add     eax, 4
 
  .Exit:
@@ -188,7 +188,7 @@ realloc:
 
  .ResizeSucceeded:
   mov     ecx, [.newSize]
-  mov     [eax + 4], ecx
+  mov     [eax], ecx
   add     eax, 4
 
  .Exit:
@@ -306,7 +306,7 @@ echostring:
   push    dword [stdOut]
   call    [WriteFile]
 
- .Exit
+ .Exit:
   pop     esi
   mov     esp, ebp
   pop     ebp
