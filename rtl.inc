@@ -242,14 +242,8 @@ free:
 
 segment .text use32
 
-struc file
-  handle: resd 1
-endstruc
-
-segment .text use32
-
 ;
-; method bool fopen( string fileName )
+; func file fopen( string fileName )
 ;
 fopen:
   push    ebp
@@ -257,18 +251,219 @@ fopen:
 
   %define .fileName ebp + 8
 
+  push    esi
+  push    ecx
+
+  xor     eax, eax
+
+  ; File name not allowed to be null
+  mov     esi, [.fileName]
+  test    esi, esi
+  jz      .Exit
+
+  ; File name not allowed to be a length of 0
+  mov     ecx, [esi - 4]
+  test    ecx, ecx
+  jz      .Exit
+
+  ; First character in file name must not be null byte (0)
+  cmp     byte [esi], 0
+  je      .Exit
+
+  ; HANDLE CreateFileA( LPCSTR lpFileName, DWORD dwDesiredAccess,
+  ;   DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+  ;   DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes,
+  ;   HANDLE hTemplateFile )
+  push    dword 0                     ; hTemplateFile
+  push    dword FILE_ATTRIBUTE_NORMAL ; dwFlagsAndAttributes
+  push    dword FILE_OPEN_EXISTING    ; dwCreationDisposition
+  push    dword 0                     ; lpSecurityAttributes
+  push    dword 0                     ; dwShareMode
+  push    dword GENERIC_READ          ; dwDesiredAccess
+  push    esi                         ; lpFileName
+  call    [CreateFileA]
+
+ .Exit:
+  pop     ecx
+  pop     esi
   mov     esp, ebp
   pop     ebp
-  ret 8
+  ret 4
 
 ;
-; method bool fcreate( string newFileName )
+; func file fcreate( string fileName )
 ;
 fcreate:
   push    ebp
   mov     ebp, esp
 
   %define .newFileName ebp + 8
+
+  mov     esp, ebp
+  pop     ebp
+  ret 4
+
+;
+; func file fmodify( string fileName )
+;
+fmodify:
+  push    ebp
+  mov     ebp, esp
+
+  %define .newFileName ebp + 8
+
+  mov     esp, ebp
+  pop     ebp
+  ret 4
+
+;
+; func fclose( @file handle )
+;
+fclose:
+  push    ebp
+  mov     ebp, esp
+
+  %define .handle ebp + 8
+
+  mov     esp, ebp
+  pop     ebp
+  ret 4
+
+;
+; func ufsize fread( file handle; @dest; ufsize size )
+;
+fread:
+  push    ebp
+  mov     ebp, esp
+
+  %define .handle ebp + 16
+  %define .dest   ebp + 12
+  %define .size   ebp + 8
+
+  mov     esp, ebp
+  pop     ebp
+  ret 12
+
+;
+; func ufsize fwrite( file handle; @source; ufsize size )
+;
+fwrite:
+  push    ebp
+  mov     ebp, esp
+
+  %define .handle ebp + 16
+  %define .source ebp + 12
+  %define .size   ebp + 8
+
+  mov     esp, ebp
+  pop     ebp
+  ret 12
+
+;
+; func bool freadch( file handle; @char dest )
+;
+freadch:
+  push    ebp
+  mov     ebp, esp
+
+  %define .handle ebp + 12
+  %define .dest   ebp + 8
+
+  mov     esp, ebp
+  pop     ebp
+  ret 8
+
+;
+; func bool fwritech( file handle; char source )
+;
+fwritech:
+  push    ebp
+  mov     ebp, esp
+
+  %define .handle ebp + 12
+  %define .source ebp + 8
+
+  mov     esp, ebp
+  pop     ebp
+  ret 8
+
+;
+; func bool fseek( file handle; ufsize offset )
+;
+fseek:
+  push    ebp
+  mov     ebp, esp
+
+  %define .handle ebp + 12
+  %define .offset ebp + 8
+
+  mov     esp, ebp
+  pop     ebp
+  ret 8
+
+;
+; func bool fseekrev( file handle; ufsize amount )
+;
+fseekrev:
+  push    ebp
+  mov     ebp, esp
+
+  %define .handle ebp + 12
+  %define .amount ebp + 8
+
+  mov     esp, ebp
+  pop     ebp
+  ret 8
+
+;
+; func bool fseekfwd( file handle; ufsize amount )
+;
+fseekfwd:
+  push    ebp
+  mov     ebp, esp
+
+  %define .handle ebp + 12
+  %define .amount ebp + 8
+
+  mov     esp, ebp
+  pop     ebp
+  ret 8
+
+;
+; func ufsize fpos( file handle )
+;
+fpos:
+  push    ebp
+  mov     ebp, esp
+
+  %define .handle ebp + 8
+
+  mov     esp, ebp
+  pop     ebp
+  ret 4
+
+;
+; func ufsize fsize( file handle )
+;
+fsize:
+  push    ebp
+  mov     ebp, esp
+
+  %define .handle ebp + 8
+
+  mov     esp, ebp
+  pop     ebp
+  ret 4
+
+;
+; func bool fsetsize( file handle; ufsize newSize )
+;
+fsetsize:
+  push    ebp
+  mov     ebp, esp
+
+  %define .handle  ebp + 12
+  %define .newSize ebp + 8
 
   mov     esp, ebp
   pop     ebp
@@ -379,15 +574,3 @@ segment .data use32
 ; Strings
 ; =======
 
-;
-; func length( string ofString )
-;
-length:
-  push    ebp
-  mov     ebp, esp
-
-  %define .ofString ebp + 8
-
-  mov     esp, ebp
-  pop     ebp
-  ret 8
