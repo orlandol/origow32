@@ -243,6 +243,110 @@ free:
 segment .text use32
 
 ;
+; func file fcreate( string fileName )
+;
+fcreate:
+  push    ebp
+  mov     ebp, esp
+
+  %define .fileName ebp + 8
+
+  push    esi
+  push    ecx
+
+  xor     eax, eax
+
+  ; File name not allowed to be null
+  mov     esi, [.fileName]
+  test    esi, esi
+  jz      .Exit
+
+  ; File name not allowed to be a length of 0
+  mov     ecx, [esi - 4]
+  test    ecx, ecx
+  jz      .Exit
+
+  ; First character in file name must not be null byte (0)
+  cmp     byte [esi], 0
+  je      .Exit
+
+  ; HANDLE CreateFileA( LPCSTR lpFileName, DWORD dwDesiredAccess,
+  ;   DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+  ;   DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes,
+  ;   HANDLE hTemplateFile )
+  push    dword 0                            ; hTemplateFile
+  push    dword FILE_ATTRIBUTE_NORMAL        ; dwFlagsAndAttributes
+  push    dword CREATE_ALWAYS                ; dwCreationDisposition
+  push    dword 0                            ; lpSecurityAttributes
+  push    dword 0                            ; dwShareMode
+  push    dword GENERIC_READ | GENERIC_WRITE ; dwDesiredAccess
+  push    esi                                ; lpFileName
+  call    [CreateFileA]
+
+  cmp     eax, INVALID_HANDLE_VALUE
+  jne     .Exit
+  xor     eax, eax
+
+ .Exit:
+  pop     ecx
+  pop     esi
+  mov     esp, ebp
+  pop     ebp
+  ret 4
+
+;
+; func file fupdate( string fileName )
+;
+fupdate:
+  push    ebp
+  mov     ebp, esp
+
+  %define .fileName ebp + 8
+
+  push    esi
+  push    ecx
+
+  xor     eax, eax
+
+  ; File name not allowed to be null
+  mov     esi, [.fileName]
+  test    esi, esi
+  jz      .Exit
+
+  ; File name not allowed to be a length of 0
+  mov     ecx, [esi - 4]
+  test    ecx, ecx
+  jz      .Exit
+
+  ; First character in file name must not be null byte (0)
+  cmp     byte [esi], 0
+  je      .Exit
+
+  ; HANDLE CreateFileA( LPCSTR lpFileName, DWORD dwDesiredAccess,
+  ;   DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+  ;   DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes,
+  ;   HANDLE hTemplateFile )
+  push    dword 0                            ; hTemplateFile
+  push    dword FILE_ATTRIBUTE_NORMAL        ; dwFlagsAndAttributes
+  push    dword OPEN_EXISTING                ; dwCreationDisposition
+  push    dword 0                            ; lpSecurityAttributes
+  push    dword 0                            ; dwShareMode
+  push    dword GENERIC_READ | GENERIC_WRITE ; dwDesiredAccess
+  push    esi                                ; lpFileName
+  call    [CreateFileA]
+
+  cmp     eax, INVALID_HANDLE_VALUE
+  jne     .Exit
+  xor     eax, eax
+
+ .Exit:
+  pop     ecx
+  pop     esi
+  mov     esp, ebp
+  pop     ebp
+  ret 4
+
+;
 ; func file fopen( string fileName )
 ;
 fopen:
@@ -274,44 +378,22 @@ fopen:
   ;   DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes,
   ;   DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes,
   ;   HANDLE hTemplateFile )
-  push    dword 0                     ; hTemplateFile
-  push    dword FILE_ATTRIBUTE_NORMAL ; dwFlagsAndAttributes
-  push    dword FILE_OPEN_EXISTING    ; dwCreationDisposition
-  push    dword 0                     ; lpSecurityAttributes
-  push    dword 0                     ; dwShareMode
-  push    dword GENERIC_READ          ; dwDesiredAccess
-  push    esi                         ; lpFileName
+  push    dword 0                            ; hTemplateFile
+  push    dword FILE_ATTRIBUTE_NORMAL        ; dwFlagsAndAttributes
+  push    dword OPEN_EXISTING                ; dwCreationDisposition
+  push    dword 0                            ; lpSecurityAttributes
+  push    dword 0                            ; dwShareMode
+  push    dword GENERIC_READ                 ; dwDesiredAccess
+  push    esi                                ; lpFileName
   call    [CreateFileA]
+
+  cmp     eax, INVALID_HANDLE_VALUE
+  jne     .Exit
+  xor     eax, eax
 
  .Exit:
   pop     ecx
   pop     esi
-  mov     esp, ebp
-  pop     ebp
-  ret 4
-
-;
-; func file fcreate( string fileName )
-;
-fcreate:
-  push    ebp
-  mov     ebp, esp
-
-  %define .newFileName ebp + 8
-
-  mov     esp, ebp
-  pop     ebp
-  ret 4
-
-;
-; func file fmodify( string fileName )
-;
-fmodify:
-  push    ebp
-  mov     ebp, esp
-
-  %define .newFileName ebp + 8
-
   mov     esp, ebp
   pop     ebp
   ret 4
@@ -325,6 +407,21 @@ fclose:
 
   %define .handle ebp + 8
 
+  push    esi
+
+  mov     esi, [.handle]
+  test    esi, esi
+  jz      .Exit
+
+  push    dword [esi]
+  call    [CloseHandle]
+
+  test    eax, eax
+  jz      .Exit
+  mov     dword [esi], 0
+
+ .Exit:
+  pop     esi
   mov     esp, ebp
   pop     ebp
   ret 4
@@ -336,10 +433,43 @@ fread:
   push    ebp
   mov     ebp, esp
 
+  %define .result ebp - 4
+  push    dword 0
+
   %define .handle ebp + 16
   %define .dest   ebp + 12
   %define .size   ebp + 8
 
+  push    edi
+  push    esi
+
+  mov     esi, [.handle]
+  mov     edi, [.dest]
+
+  xor     eax, eax
+  test    esi, esi
+  jz      .Exit
+  test    edi, edi
+  jz      .Exit
+
+  ; BOOL ReadFile( HANDLE hFile, LPVOID lpBuffer,
+  ;   DWORD nNumberOfBytesToRead, LPDWORD lpNumberofBytesRead,
+  ;   LPOVERLAPPED lpOverlapped )
+  push    dword 0          ; lpOverlapped
+  lea     eax, [.result]
+  push    eax              ; lpNumberofBytesRead
+  push    dword [.size]    ; nNumberOfBytesToRead
+  push    dword [.dest]    ; lpBuffer
+  push    dword [.handle]  ; hFile
+  call    [ReadFile]
+
+  test    eax, eax
+  jz      .Exit
+  mov     eax, [.result]
+
+ .Exit:
+  pop     esi
+  pop     edi
   mov     esp, ebp
   pop     ebp
   ret 12
@@ -351,10 +481,43 @@ fwrite:
   push    ebp
   mov     ebp, esp
 
+  %define .result ebp - 4
+  push    dword 0
+
   %define .handle ebp + 16
   %define .source ebp + 12
   %define .size   ebp + 8
 
+  push    edi
+  push    esi
+
+  mov     esi, [.handle]
+  mov     edi, [.source]
+
+  xor     eax, eax
+  test    esi, esi
+  jz      .Exit
+  test    edi, edi
+  jz      .Exit
+
+  ; BOOL WriteFile( HANDLE hFile, LPVOID lpBuffer,
+  ;   DWORD nNumberOfBytesToWrite, LPDWORD lpNumberofBytesWritten,
+  ;   LPOVERLAPPED lpOverlapped )
+  push    dword 0          ; lpOverlapped
+  lea     eax, [.result]
+  push    eax              ; lpNumberofBytesWritten
+  push    dword [.size]    ; nNumberOfBytesToWrite
+  push    dword [.source]  ; lpBuffer
+  push    dword [.handle]  ; hFile
+  call    [WriteFile]
+
+  test    eax, eax
+  jz      .Exit
+  mov     eax, [.result]
+
+ .Exit:
+  pop     esi
+  pop     edi
   mov     esp, ebp
   pop     ebp
   ret 12
@@ -366,9 +529,43 @@ freadch:
   push    ebp
   mov     ebp, esp
 
-  %define .handle ebp + 12
-  %define .dest   ebp + 8
+  %define .result ebp - 4
+  push    dword 0
 
+  %define .handle ebp + 16
+  %define .dest   ebp + 12
+  %define .size   ebp + 8
+
+  push    edi
+  push    esi
+
+  mov     esi, [.handle]
+  mov     edi, [.dest]
+
+  xor     eax, eax
+  test    esi, esi
+  jz      .Exit
+  test    edi, edi
+  jz      .Exit
+
+  ; BOOL ReadFile( HANDLE hFile, LPVOID lpBuffer,
+  ;   DWORD nNumberOfBytesToRead, LPDWORD lpNumberofBytesRead,
+  ;   LPOVERLAPPED lpOverlapped )
+  push    dword 0          ; lpOverlapped
+  lea     eax, [.result]
+  push    eax              ; lpNumberofBytesRead
+  push    dword 1          ; nNumberOfBytesToRead
+  push    dword [.dest]    ; lpBuffer
+  push    dword [.handle]  ; hFile
+  call    [ReadFile]
+
+  cmp     eax, 1
+  je      .Exit
+  xor     eax, eax
+
+ .Exit:
+  pop     esi
+  pop     edi
   mov     esp, ebp
   pop     ebp
   ret 8
@@ -380,9 +577,43 @@ fwritech:
   push    ebp
   mov     ebp, esp
 
-  %define .handle ebp + 12
-  %define .source ebp + 8
+  %define .result ebp - 4
+  push    dword 0
 
+  %define .handle ebp + 16
+  %define .dest   ebp + 12
+  %define .size   ebp + 8
+
+  push    edi
+  push    esi
+
+  mov     esi, [.handle]
+  mov     edi, [.dest]
+
+  xor     eax, eax
+  test    esi, esi
+  jz      .Exit
+  test    edi, edi
+  jz      .Exit
+
+  ; BOOL WriteFile( HANDLE hFile, LPVOID lpBuffer,
+  ;   DWORD nNumberOfBytesToWrite, LPDWORD lpNumberofBytesWritten,
+  ;   LPOVERLAPPED lpOverlapped )
+  push    dword 0          ; lpOverlapped
+  lea     eax, [.result]
+  push    eax              ; lpNumberofBytesWritten
+  push    dword 1          ; nNumberOfBytesToWrite
+  push    dword [.dest]    ; lpBuffer
+  push    dword [.handle]  ; hFile
+  call    [ReadFile]
+
+  cmp     eax, 1
+  je      .Exit
+  xor     eax, eax
+
+ .Exit:
+  pop     esi
+  pop     edi
   mov     esp, ebp
   pop     ebp
   ret 8
@@ -397,74 +628,123 @@ fseek:
   %define .handle ebp + 12
   %define .offset ebp + 8
 
+  ; DWORD SetFilePointer( HANDLE hFile, LONG lDistanceToMove,
+  ;   PLONG lpDistanceToMoveHigh, DWORD dwMoveMethod )
+  push    dword FILE_BEGIN ; dwMoveMethod
+  push    dword 0          ; lpDistanceToMoveHigh
+  push    dword [.offset]  ; lpDistanceToMove
+  push    dword [.handle]  ; hFile
+  call    [SetFilePointer]
+
+  cmp     eax, INVALID_SET_FILE_POINTER
+  je      .OffsetValid
+  xor     eax, eax
+  jmp     .Exit
+ .OffsetValid:
+  mov     eax, 1
+
+ .Exit
   mov     esp, ebp
   pop     ebp
   ret 8
 
 ;
-; func bool fseekrev( file handle; ufsize amount )
-;
-fseekrev:
-  push    ebp
-  mov     ebp, esp
-
-  %define .handle ebp + 12
-  %define .amount ebp + 8
-
-  mov     esp, ebp
-  pop     ebp
-  ret 8
-
-;
-; func bool fseekfwd( file handle; ufsize amount )
-;
-fseekfwd:
-  push    ebp
-  mov     ebp, esp
-
-  %define .handle ebp + 12
-  %define .amount ebp + 8
-
-  mov     esp, ebp
-  pop     ebp
-  ret 8
-
-;
-; func ufsize fpos( file handle )
+; func bool fpos( file handle; @ufsize pos )
 ;
 fpos:
   push    ebp
   mov     ebp, esp
 
-  %define .handle ebp + 8
+  %define .handle ebp + 12
+  %define .size   ebp + 8
 
+  push    edi
+
+  xor     eax, eax
+
+  mov     edi, [.size]
+  test    edi, edi
+  jz      .Exit
+
+  ; DWORD SetFilePointer( HANDLE hFile, LONG lDistanceToMove,
+  ;   PLONG lpDistanceToMoveHigh, DWORD dwMoveMethod )
+  push    dword FILE_CURRENT ; dwMoveMethod
+  push    dword 0            ; lpDistanceToMoveHigh
+  push    dword [.offset]    ; lpDistanceToMove
+  push    dword [.handle]    ; hFile
+  call    [SetFilePointer]
+
+  cmp     eax, INVALID_FILE_SIZE
+  jne     .PosValid
+  xor     eax, eax
+  mov     [edi], eax
+  jmp     .Exit
+ .PosValid:
+  mov     [edi], eax
+  mov     eax, 1
+
+ .Exit:
   mov     esp, ebp
   pop     ebp
-  ret 4
+  ret 8
 
 ;
-; func ufsize fsize( file handle )
+; func bool fsize( file handle; @ufsize size )
 ;
 fsize:
   push    ebp
   mov     ebp, esp
 
-  %define .handle ebp + 8
+  %define .handle ebp + 12
+  %define .size   ebp + 8
 
+  push    edi
+
+  xor     eax, eax
+
+  mov     edi, [.size]
+  test    edi, edi
+  jz      .Exit
+
+  ; DWORD GetFileSize( HANDLE hFile, LPDWORD lpFileSizeHigh )
+  push    dword [.handle] ; hFile
+  push    dword 0         ; lpFileSizeHigh
+  call    [GetFileSize]
+
+  cmp     eax, INVALID_FILE_SIZE
+  jne     .SizeValid
+  xor     eax, eax
+  mov     [edi], eax
+  jmp     .Exit
+ .SizeValid:
+  mov     [edi], eax
+  mov     eax, 1
+
+ .Exit:
+  pop     edi
   mov     esp, ebp
   pop     ebp
   ret 4
 
 ;
-; func bool fsetsize( file handle; ufsize newSize )
+; func bool fseteof( file handle )
 ;
-fsetsize:
+fseteof:
   push    ebp
   mov     ebp, esp
 
   %define .handle  ebp + 12
   %define .newSize ebp + 8
 
+  ; BOOL SetEndOfFile( HANDLE hFile )
+  push    dword [.handle]
+  call    [SetEndOfFile]
+
+  test    eax, eax
+  jz      .Exit
+  mov     eax, 1
+
+ .Exit:
   mov     esp, ebp
   pop     ebp
   ret 8

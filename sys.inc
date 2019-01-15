@@ -3,6 +3,8 @@
 ; Win32 error messages
 ; ====================
 
+  %define INVALID_HANDLE_VALUE (-1)
+
   ;
   ; DWORD WINAPI GetLastError()
   ;
@@ -11,7 +13,7 @@
 
   ;
   ; DWORD FormatMessage( DWORD dwFlags, LPCVOID lpSource, DWORD dwMessageId,
-  ;   DWORD dwLanguageId, LPTSTR lpBuffer, DWORD nSize, va_list *Arguments );
+  ;   DWORD dwLanguageId, LPTSTR lpBuffer, DWORD nSize, va_list *Arguments )
   ;
   extern FormatMessageA
   import FormatMessageA kernel32.dll
@@ -73,15 +75,25 @@
 ; Win32 file I/O
 ; ==============
 
-  %define CREATE_ALWAYS     2
+  %define GENERIC_ALL     0x10000000
+  %define GENERIC_EXECUTE 0x20000000
+  %define GENERIC_WRITE   0x40000000
+  %define GENERIC_READ    0x80000000
+
   %define CREATE_NEW        1
-  %define OPEN_ALWAYS       4
+  %define CREATE_ALWAYS     2
   %define OPEN_EXISTING     3
+  %define OPEN_ALWAYS       4
   %define TRUNCATE_EXISTING 5
+
+  %define FILE_ATTRIBUTE_NORMAL 128
 
   %define FILE_BEGIN   0
   %define FILE_CURRENT 1
   %define FILE_END     2
+
+  %define INVALID_SET_FILE_POINTER (-1)
+  %define INVALID_FILE_SIZE (-1)
 
   %define MAX_PATH 260
 
@@ -124,7 +136,7 @@
 
   ;
   ; DWORD SetFilePointer( HANDLE hFile, LONG lDistanceToMove,
-  ;   PLONG lpDistanceToMoveHigh, DWORD dwMoveMethod );
+  ;   PLONG lpDistanceToMoveHigh, DWORD dwMoveMethod )
   ;
   extern SetFilePointer
   import SetFilePointer kernel32.dll
@@ -137,7 +149,7 @@
 
   ;
   ; BOOL CreateDirectoryA( LPCSTR lpPathName,
-  ;   LPSECURITY_ATTRIBUTES lpSecurityAttributes );
+  ;   LPSECURITY_ATTRIBUTES lpSecurityAttributes )
   ;
   extern CreateDirectoryA
   import CreateDirectoryA kernel32.dll
@@ -147,6 +159,19 @@
   ;
   extern RemoveDirectoryA
   import RemoveDirectoryA kernel32.dll
+
+  ;
+  ; DWORD GetCurrentDirectory(
+  ;   DWORD nBufferLength, LPTSTR lpBuffer )
+  ;
+  extern GetCurrentDirectoryA
+  import GetCurrentDirectoryA kernel32.dll
+
+  ;
+  ; BOOL SetCurrentDirectory( LPCTSTR lpPathName )
+  ;
+  extern SetCurrentDirectoryA
+  import SetCurrentDirectoryA kernel32.dll
 
 ; =================
 ; Win32 Console I/O
