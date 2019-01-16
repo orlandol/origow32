@@ -36,6 +36,19 @@ TestCreate:
   push    ebp
   mov     ebp, esp
 
+  %define .testFileHandle ebp - 4
+  push    dword 0
+
+  push    testFileName
+  call    fcreate
+
+  mov     [.testFileHandle], eax
+
+ .Exit:
+  lea     eax, [.testFileHandle]
+  push    eax
+  call    fclose
+
   mov     esp, ebp
   pop     ebp
   ret
@@ -63,5 +76,8 @@ TestOpen:
   ret
 
 segment .data use32
+
+                dd 8
+  testFileName: db 'test.txt',0
 
 section .bss use32
