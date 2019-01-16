@@ -38,11 +38,43 @@ TestCreate:
 
   %define .testFileHandle ebp - 4
   push    dword 0
+  %define .tempPos ebp - 8
+  push    dword 0
 
+  ; Attempt to create file
   push    testFileName
   call    fcreate
 
+  test    eax, eax
+  jnz     .CreateSucceeded
+  ; TODO: Display error message
+  push    dword 1
+  call    [ExitProcess]
+ .CreateSucceeded:
+
   mov     [.testFileHandle], eax
+
+  ; Attempt to get file position
+  push    dword [.testFileHandle]
+  lea     eax, [.tempPos]
+  push    eax
+  call    fpos
+
+  test    eax, eax
+  jnz     .GetPos0Succeeded
+  ; TODO: Display error message
+  push    dword 2
+  call    [ExitProcess]
+ .GetPos0Succeeded:
+
+  cmp     dword [.tempPos], 0
+  jz      .IsPos0
+  push    dword [.tempPos]
+  call    echouint
+  ; TODO: Display error message
+  push    dword 3
+  call    [ExitProcess]
+ .IsPos0:
 
  .Exit:
   lea     eax, [.testFileHandle]
@@ -79,5 +111,8 @@ segment .data use32
 
                 dd 8
   testFileName: db 'test.txt',0
+
+            dd 26
+  testText: db 'abcdefghijklmnopqrstuvwxyz',0
 
 section .bss use32
