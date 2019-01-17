@@ -463,8 +463,8 @@ fread:
   push    dword [.handle]  ; hFile
   call    [ReadFile]
 
-  test    eax, eax
-  jz      .Exit
+;  test    eax, eax
+;  jz      .Exit
   mov     eax, [.result]
 
  .Exit:
@@ -511,8 +511,8 @@ fwrite:
   push    dword [.handle]  ; hFile
   call    [WriteFile]
 
-  test    eax, eax
-  jz      .Exit
+;  test    eax, eax
+;  jz      .Exit
   mov     eax, [.result]
 
  .Exit:
@@ -532,9 +532,8 @@ freadch:
   %define .result ebp - 4
   push    dword 0
 
-  %define .handle ebp + 16
-  %define .dest   ebp + 12
-  %define .size   ebp + 8
+  %define .handle ebp + 12
+  %define .dest   ebp + 8
 
   push    edi
   push    esi
@@ -580,15 +579,14 @@ fwritech:
   %define .result ebp - 4
   push    dword 0
 
-  %define .handle ebp + 16
-  %define .dest   ebp + 12
-  %define .size   ebp + 8
+  %define .handle ebp + 12
+  %define .source ebp + 8
 
   push    edi
   push    esi
 
   mov     esi, [.handle]
-  mov     edi, [.dest]
+  mov     edi, [.source]
 
   xor     eax, eax
   test    esi, esi
@@ -603,9 +601,9 @@ fwritech:
   lea     eax, [.result]
   push    eax              ; lpNumberofBytesWritten
   push    dword 1          ; nNumberOfBytesToWrite
-  push    dword [.dest]    ; lpBuffer
+  push    dword [.source]  ; lpBuffer
   push    dword [.handle]  ; hFile
-  call    [ReadFile]
+  call    [WriteFile]
 
   cmp     eax, 1
   je      .Exit
@@ -637,7 +635,7 @@ fseek:
   call    [SetFilePointer]
 
   cmp     eax, INVALID_SET_FILE_POINTER
-  je      .OffsetValid
+  jne     .OffsetValid
   xor     eax, eax
   jmp     .Exit
  .OffsetValid:
@@ -656,13 +654,13 @@ fpos:
   mov     ebp, esp
 
   %define .handle ebp + 12
-  %define .size   ebp + 8
+  %define .pos    ebp + 8
 
   push    edi
 
   xor     eax, eax
 
-  mov     edi, [.size]
+  mov     edi, [.pos]
   test    edi, edi
   jz      .Exit
 
@@ -670,20 +668,21 @@ fpos:
   ;   PLONG lpDistanceToMoveHigh, DWORD dwMoveMethod )
   push    dword FILE_CURRENT ; dwMoveMethod
   push    dword 0            ; lpDistanceToMoveHigh
-  push    dword [.offset]    ; lpDistanceToMove
+  push    dword 0            ; lpDistanceToMove
   push    dword [.handle]    ; hFile
   call    [SetFilePointer]
+
+  mov     dword [edi], eax
 
   cmp     eax, INVALID_FILE_SIZE
   jne     .PosValid
   xor     eax, eax
-  mov     [edi], eax
   jmp     .Exit
  .PosValid:
-  mov     [edi], eax
   mov     eax, 1
 
  .Exit:
+  pop     edi
   mov     esp, ebp
   pop     ebp
   ret 8
@@ -727,14 +726,13 @@ fsize:
   ret 4
 
 ;
-; func bool fseteof( file handle )
+; func bool fmarkeof( file handle )
 ;
 fseteof:
   push    ebp
   mov     ebp, esp
 
-  %define .handle  ebp + 12
-  %define .newSize ebp + 8
+  %define .handle  ebp + 8
 
   ; BOOL SetEndOfFile( HANDLE hFile )
   push    dword [.handle]

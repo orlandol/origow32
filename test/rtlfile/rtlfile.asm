@@ -23,6 +23,8 @@ segment .text use32
   nop
   call    TestOpen
 
+  ; TODO: echo( "Tests passed", eoln )
+
   mov     esp, ebp
   pop     ebp
 
@@ -41,7 +43,7 @@ TestCreate:
   %define .tempPos ebp - 8
   push    dword 0
 
-  ; Attempt to create file
+  ; Create the test file
   push    testFileName
   call    fcreate
 
@@ -54,7 +56,7 @@ TestCreate:
 
   mov     [.testFileHandle], eax
 
-  ; Attempt to get file position
+  ; Get file position
   push    dword [.testFileHandle]
   lea     eax, [.tempPos]
   push    eax
@@ -69,12 +71,33 @@ TestCreate:
 
   cmp     dword [.tempPos], 0
   jz      .IsPos0
-  push    dword [.tempPos]
-  call    echouint
   ; TODO: Display error message
   push    dword 3
   call    [ExitProcess]
  .IsPos0:
+
+  ; Skip to offset 13
+  push    dword [.testFileHandle]
+  push    dword 13
+  call    fseek
+
+  test    eax, eax
+  jnz     .fseek13Succeeded
+  ; TODO: Display error message
+  push    dword 4
+  call    [ExitProcess]
+ .fseek13Succeeded:
+
+  ; Change file size by setting EOF
+  push    dword [.testFileHandle]
+  call    fseteof
+
+  test    eax, eax
+  jnz     .fseteofSucceeded
+  ; TODO: Display error message
+  push    dword 5
+  call    [ExitProcess]
+ .fseteofSucceeded:
 
  .Exit:
   lea     eax, [.testFileHandle]
