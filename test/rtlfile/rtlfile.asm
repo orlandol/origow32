@@ -99,6 +99,19 @@ TestCreate:
   call    [ExitProcess]
  .fseteofSucceeded:
 
+  ; Write the last uppercase half of the test string
+  push    dword [.testFileHandle]
+  push    upperTestText + 13
+  push    dword 13
+  call    fwrite
+
+  cmp     eax, 13
+  je      .Write13Succeeded
+  ; TODO: Display error message
+  push     dword 6
+  call     [ExitProcess]
+ .Write13Succeeded:
+
  .Exit:
   lea     eax, [.testFileHandle]
   push    eax
@@ -135,7 +148,10 @@ segment .data use32
                 dd 8
   testFileName: db 'test.txt',0
 
-            dd 26
-  testText: db 'abcdefghijklmnopqrstuvwxyz',0
+                 dd 26
+  lowerTestText: db 'abcdefghijklmnopqrstuvwxyz',0
+
+                 dd 26
+  upperTestText: db 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',0
 
 section .bss use32

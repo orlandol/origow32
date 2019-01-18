@@ -488,8 +488,8 @@ fwrite:
   %define .source ebp + 12
   %define .size   ebp + 8
 
-  push    edi
   push    esi
+  push    edi
 
   mov     esi, [.handle]
   mov     edi, [.source]
@@ -516,8 +516,8 @@ fwrite:
   mov     eax, [.result]
 
  .Exit:
-  pop     esi
   pop     edi
+  pop     esi
   mov     esp, ebp
   pop     ebp
   ret 12
