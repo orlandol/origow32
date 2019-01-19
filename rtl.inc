@@ -475,6 +475,53 @@ fread:
   ret 12
 
 ;
+; func bool freadch( file handle; @char dest )
+;
+freadch:
+  push    ebp
+  mov     ebp, esp
+
+  %define .result ebp - 4
+  push    dword 0
+
+  %define .handle ebp + 12
+  %define .dest   ebp + 8
+
+  push    edi
+  push    esi
+
+  mov     esi, [.handle]
+  mov     edi, [.dest]
+
+  xor     eax, eax
+  test    esi, esi
+  jz      .Exit
+  test    edi, edi
+  jz      .Exit
+
+  ; BOOL ReadFile( HANDLE hFile, LPVOID lpBuffer,
+  ;   DWORD nNumberOfBytesToRead, LPDWORD lpNumberofBytesRead,
+  ;   LPOVERLAPPED lpOverlapped )
+  push    dword 0          ; lpOverlapped
+  lea     eax, [.result]
+  push    eax              ; lpNumberofBytesRead
+  push    dword 1          ; nNumberOfBytesToRead
+  push    dword [.dest]    ; lpBuffer
+  push    dword [.handle]  ; hFile
+  call    [ReadFile]
+
+  cmp     eax, 1
+  je      .Exit
+  xor     eax, eax
+
+ .Exit:
+  pop     esi
+  pop     edi
+  mov     esp, ebp
+  pop     ebp
+  ret 8
+
+;
 ; func ufsize fwrite( file handle; @source; ufsize size )
 ;
 fwrite:
@@ -521,53 +568,6 @@ fwrite:
   mov     esp, ebp
   pop     ebp
   ret 12
-
-;
-; func bool freadch( file handle; @char dest )
-;
-freadch:
-  push    ebp
-  mov     ebp, esp
-
-  %define .result ebp - 4
-  push    dword 0
-
-  %define .handle ebp + 12
-  %define .dest   ebp + 8
-
-  push    edi
-  push    esi
-
-  mov     esi, [.handle]
-  mov     edi, [.dest]
-
-  xor     eax, eax
-  test    esi, esi
-  jz      .Exit
-  test    edi, edi
-  jz      .Exit
-
-  ; BOOL ReadFile( HANDLE hFile, LPVOID lpBuffer,
-  ;   DWORD nNumberOfBytesToRead, LPDWORD lpNumberofBytesRead,
-  ;   LPOVERLAPPED lpOverlapped )
-  push    dword 0          ; lpOverlapped
-  lea     eax, [.result]
-  push    eax              ; lpNumberofBytesRead
-  push    dword 1          ; nNumberOfBytesToRead
-  push    dword [.dest]    ; lpBuffer
-  push    dword [.handle]  ; hFile
-  call    [ReadFile]
-
-  cmp     eax, 1
-  je      .Exit
-  xor     eax, eax
-
- .Exit:
-  pop     esi
-  pop     edi
-  mov     esp, ebp
-  pop     ebp
-  ret 8
 
 ;
 ; func bool fwritech( file handle; char source )
@@ -706,8 +706,8 @@ fsize:
   jz      .Exit
 
   ; DWORD GetFileSize( HANDLE hFile, LPDWORD lpFileSizeHigh )
-  push    dword [.handle] ; hFile
   push    dword 0         ; lpFileSizeHigh
+  push    dword [.handle] ; hFile
   call    [GetFileSize]
 
   cmp     eax, INVALID_FILE_SIZE
