@@ -433,15 +433,15 @@ fread:
   push    ebp
   mov     ebp, esp
 
-  %define .result ebp - 4
-  push    dword 0
-
   %define .handle ebp + 16
   %define .dest   ebp + 12
   %define .size   ebp + 8
 
-  push    edi
+  push    dword 0
+  %define .result ebp - 4
+
   push    esi
+  push    edi
 
   mov     esi, [.handle]
   mov     edi, [.dest]
@@ -463,13 +463,13 @@ fread:
   push    dword [.handle]  ; hFile
   call    [ReadFile]
 
-;  test    eax, eax
-;  jz      .Exit
+  test    eax, eax
+  jz      .Exit
   mov     eax, [.result]
 
  .Exit:
-  pop     esi
   pop     edi
+  pop     esi
   mov     esp, ebp
   pop     ebp
   ret 12
@@ -481,14 +481,14 @@ freadch:
   push    ebp
   mov     ebp, esp
 
-  %define .result ebp - 4
-  push    dword 0
-
   %define .handle ebp + 12
   %define .dest   ebp + 8
 
-  push    edi
+  push    dword 0
+  %define .result ebp - 4
+
   push    esi
+  push    edi
 
   mov     esi, [.handle]
   mov     edi, [.dest]
@@ -515,8 +515,8 @@ freadch:
   xor     eax, eax
 
  .Exit:
-  pop     esi
   pop     edi
+  pop     esi
   mov     esp, ebp
   pop     ebp
   ret 8
@@ -528,12 +528,12 @@ fwrite:
   push    ebp
   mov     ebp, esp
 
-  %define .result ebp - 4
-  push    dword 0
-
   %define .handle ebp + 16
   %define .source ebp + 12
   %define .size   ebp + 8
+
+  push    dword 0
+  %define .result ebp - 4
 
   push    esi
   push    edi
@@ -558,8 +558,8 @@ fwrite:
   push    dword [.handle]  ; hFile
   call    [WriteFile]
 
-;  test    eax, eax
-;  jz      .Exit
+  test    eax, eax
+  jz      .Exit
   mov     eax, [.result]
 
  .Exit:
@@ -576,14 +576,14 @@ fwritech:
   push    ebp
   mov     ebp, esp
 
-  %define .result ebp - 4
-  push    dword 0
-
   %define .handle ebp + 12
   %define .source ebp + 8
 
-  push    edi
+  push    dword 0
+  %define .result ebp - 4
+
   push    esi
+  push    edi
 
   mov     esi, [.handle]
   mov     edi, [.source]
@@ -610,8 +610,8 @@ fwritech:
   xor     eax, eax
 
  .Exit:
-  pop     esi
   pop     edi
+  pop     esi
   mov     esp, ebp
   pop     ebp
   ret 8
@@ -762,8 +762,8 @@ echostring:
 
   %define .strValue ebp + 8
 
-  %define .tempWritten ebp - 4
   push    dword 0
+  %define .tempWritten ebp - 4
 
   push    esi
 
@@ -794,13 +794,13 @@ echouint:
 
   %define .uintValue ebp + 8
 
+  push    dword 0
+  push    dword 0
+  push    dword 0
   %define .valueStr ebp - 12
-  push    dword 0
-  push    dword 0
-  push    dword 0
 
-  %define .tempWritten ebp - 16
   push    dword 0
+  %define .tempWritten ebp - 16
 
   push    ebx
   push    ecx
