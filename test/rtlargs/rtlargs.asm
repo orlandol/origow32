@@ -4,8 +4,9 @@
   BITS 32
 
   %include "sys.inc"
-  %include "rtl.inc"
   %include "chtable.inc"
+  %include "debug.inc"
+  %include "rtl.inc"
 
 segment .text use32
 
@@ -14,8 +15,6 @@ segment .text use32
   mov     ebp, esp
 
   call    InitRTL
-
-  call    CommandLineLength
 
   mov     esp, ebp
   pop     ebp

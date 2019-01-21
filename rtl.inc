@@ -26,16 +26,25 @@ InitRTL:
   call    [GetStdHandle]
   mov     [stdErr], eax
 
+  call    InitArgs
+
   mov     esp, ebp
   pop     ebp
   ret
 
 ;
-; func usize CommandLineLength()
+; func InitArgs()
 ;
-CommandLineLength:
+InitArgs:
   push    ebp
   mov     ebp, esp
+
+  push    dword 0
+  %define .commandLine ebp - 4
+
+  push    dword 0
+  %define .argSize ebp - 8
+
   push    ebx
   push    ecx
   push    edx
@@ -43,52 +52,69 @@ CommandLineLength:
   push    edi
 
   call    [GetCommandLineA]
+  mov     [.commandLine], eax
 
   mov     esi, eax
-  xor     ecx, ecx
-
   test    esi, esi
-  je      .DoneCounting
+  jz      .Exit
 
+  mov     dword [argc], 1
+  xor     eax, eax
+  mov     al, [esi]
+
+  ; Space characters
  .SkipSpace:
+  test    byte [eax + chTable], chSpace
+  jz      .DoneSpace
   mov     al, [esi]
-  test    al, al
-  jz      .DoneCounting
   inc     esi
-  cmp     al, '"'
-  je      .CountString
-  cmp     al, ' '
-  je      .SkipSpace
-  cmp     al, 9 ; Tab
-  je      .SkipSpace
-  cmp     al, 13 ; CR
-  je      .SkipSpace
-  cmp     al, 10 ; LF
-  je      .SkipSpace
+  jmp     .SkipSpace
+ .DoneSpace:
 
- .CountCharacters:
+  ; Quoted string argument
+  cmp     al, '"'
+  jne     .DoneString
   mov     al, [esi]
-  test    al, al
-  jz      .DoneCounting
   inc     esi
-  cmp     al, '"'
-  je      .CountString
-  inc     ecx
-  jmp     .CountCharacters
-
  .CountString:
-  mov     al, [esi]
   test    al, al
   jz      .DoneCounting
-  inc     esi
   cmp     al, '"'
-  je      .SkipSpace
-  inc     ecx
+  jz      .DoneString
+  mov     al, [esi]
+  inc     esi
+  inc     dword [.argSize]
   jmp     .CountString
+ .DoneString:
+  mov     al, [esi]
+  inc     esi
+  inc     dword [argc]
+  jmp     .SkipSpace
+
+  ; Contigous character argument
+ .CountChars:
+  test    al, al
+  jz      .DoneCounting
+  test    byte [eax + chTable], chPrint
+  jz      .DoneChars
+  mov     al, [esi]
+  inc     esi
+  inc     dword [.argSize]
+  jmp     .CountChars
+ .DoneChars:
+  inc     dword [argc]
+  jmp     .SkipSpace
 
  .DoneCounting:
-  mov     eax, ecx
+  ; TODO - Allocate memory for argv
 
+  ; TODO - Copy arguments
+
+  mov     eax, [argc]
+  mov     ecx, [.argSize]
+
+ .Exit:
+call dump
   pop     edi
   pop     esi
   pop     edx
@@ -97,20 +123,6 @@ CommandLineLength:
   mov     esp, ebp
   pop     ebp
   ret
-
-;
-; func unsigned ArgCount( string commandLine; usize commandLength )
-;
-ArgCount:
-  push    ebp
-  mov     ebp, esp
-
-  %define .commandLine   ebp + 12
-  %define .commandLength ebp + 8
-
-  mov     esp, ebp
-  pop     ebp
-  ret 8
 
 ; =================
 ; Memory management
@@ -641,7 +653,7 @@ fseek:
  .OffsetValid:
   mov     eax, 1
 
- .Exit
+ .Exit:
   mov     esp, ebp
   pop     ebp
   ret 8
@@ -847,6 +859,9 @@ segment .data use32
 
         dd 2
   eoln: db 13, 10, 0
+
+  argc: dd 0
+  argv: dd 0
 
 ; =======
 ; Strings
