@@ -43,7 +43,10 @@ InitArgs:
   %define .commandLine ebp - 4
 
   push    dword 0
-  %define .argSize ebp - 8
+  %define .argc ebp - 8
+
+  push    dword 0
+  %define .argSize ebp - 12
 
   push    ebx
   push    ecx
@@ -55,15 +58,16 @@ InitArgs:
   mov     [.commandLine], eax
 
   mov     esi, eax
+  xor     eax, eax
   test    esi, esi
   jz      .Exit
 
-  mov     dword [argc], 1
-  xor     eax, eax
   mov     al, [esi]
+  inc     esi
 
-  ; Space characters
  .SkipSpace:
+  test    al, al
+  jz      .DoneCounting
   test    byte [eax + chTable], chSpace
   jz      .DoneSpace
   mov     al, [esi]
@@ -71,38 +75,43 @@ InitArgs:
   jmp     .SkipSpace
  .DoneSpace:
 
-  ; Quoted string argument
   cmp     al, '"'
-  jne     .DoneString
+  jne     .NotAString
   mov     al, [esi]
   inc     esi
  .CountString:
   test    al, al
   jz      .DoneCounting
   cmp     al, '"'
-  jz      .DoneString
+  je      .DoneString
+  test    byte [eax + chTable], chPrint
+  jz      .InvalidArgument
+  inc     dword [.argSize]
   mov     al, [esi]
   inc     esi
-  inc     dword [.argSize]
   jmp     .CountString
  .DoneString:
   mov     al, [esi]
   inc     esi
-  inc     dword [argc]
+  inc     dword [.argc]
+  add     dword [.argSize], 5
   jmp     .SkipSpace
+ .NotAString:
 
-  ; Contigous character argument
- .CountChars:
+ .CountCharacters:
   test    al, al
   jz      .DoneCounting
+  test    byte [eax + chTable], chSpace
+  jnz     .DoneCharacters
   test    byte [eax + chTable], chPrint
-  jz      .DoneChars
+  jz      .InvalidArgument
+  inc     dword [.argSize]
   mov     al, [esi]
   inc     esi
-  inc     dword [.argSize]
-  jmp     .CountChars
- .DoneChars:
-  inc     dword [argc]
+  jmp     .CountCharacters
+ .DoneCharacters:
+  inc     dword [.argc]
+  add     dword [.argSize], 5
   jmp     .SkipSpace
 
  .DoneCounting:
@@ -110,8 +119,10 @@ InitArgs:
 
   ; TODO - Copy arguments
 
-  mov     eax, [argc]
+  mov     eax, [.argc]
   mov     ecx, [.argSize]
+
+ .InvalidArgument:
 
  .Exit:
 call dump
