@@ -80,41 +80,39 @@ InitArgs:
   mov     al, [esi]
   inc     esi
  .CountString:
-  test    al, al
-  jz      .DoneCounting
-  cmp     al, '"'
-  je      .DoneString
   test    byte [eax + chTable], chPrint
-  jz      .InvalidArgument
+  jz      .DoneString
+  cmp     al, '"'
+  je      .ClosedString
+  mov     al, [esi]
+  inc     esi
   inc     dword [.argSize]
-  mov     al, [esi]
-  inc     esi
   jmp     .CountString
- .DoneString:
+ .ClosedString:
   mov     al, [esi]
   inc     esi
+ .DoneString:
   inc     dword [.argc]
-  add     dword [.argSize], 5
+  add     dword [.argSize], 9 ; ptr + size + null
   jmp     .SkipSpace
  .NotAString:
 
- .CountCharacters:
-  test    al, al
-  jz      .DoneCounting
+ .CountChar:
   test    byte [eax + chTable], chSpace
-  jnz     .DoneCharacters
+  jnz     .DoneChar
   test    byte [eax + chTable], chPrint
-  jz      .InvalidArgument
-  inc     dword [.argSize]
+  jz      .DoneChar
   mov     al, [esi]
   inc     esi
-  jmp     .CountCharacters
- .DoneCharacters:
+  inc     dword [.argSize]
+  jmp     .CountChar
+ .DoneChar:
   inc     dword [.argc]
-  add     dword [.argSize], 5
+  add     dword [.argSize], 9 ; ptr + size + null
   jmp     .SkipSpace
 
  .DoneCounting:
+
   ; TODO - Allocate memory for argv
 
   ; TODO - Copy arguments
