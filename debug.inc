@@ -1,3 +1,7 @@
+%ifndef INC_DEBUG
+%define INC_DEBUG
+
+%include "sys.inc"
 
 segment .text use32
 
@@ -241,3 +245,5 @@ section .data use32
   dumpLine4: db '  esi = 0x00000000 (0000000000)  edi = 0x00000000 (0000000000)',13,10
   dumpLine5: db '  ebp = 0x00000000 (0000000000)  esp = 0x00000000 (0000000000)',13,10
   dumpLine6: db '  ------------------------------------------------------------',13,10,0
+
+%endif

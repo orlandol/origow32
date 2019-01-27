@@ -1,5 +1,6 @@
 
 %include "sys.inc"
+%include "chtable.inc"
 
 ; =========
 ; RTL state
@@ -46,13 +47,20 @@ InitArgs:
   %define .argc ebp - 8
 
   push    dword 0
-  %define .argSize ebp - 12
+  %define .argv ebp - 12
+
+  push    dword 0
+  %define .argSize ebp - 16
 
   push    ebx
   push    ecx
   push    edx
   push    esi
   push    edi
+
+  ; Only execute once
+  cmp     dword [argv], 0
+  jne     .Exit
 
   call    [GetCommandLineA]
   mov     [.commandLine], eax
@@ -62,6 +70,7 @@ InitArgs:
   test    esi, esi
   jz      .Exit
 
+  ; Calculate argc, and the size needed for argv
   mov     al, [esi]
   inc     esi
 
@@ -76,12 +85,14 @@ InitArgs:
  .DoneSpace:
 
   cmp     al, '"'
-  jne     .NotAString
+  jne     .NotString
   mov     al, [esi]
   inc     esi
  .CountString:
-  test    byte [eax + chTable], chPrint
+  test    al, al
   jz      .DoneString
+  cmp     byte [eax + chTable], 0
+  je      .InvalidArgument
   cmp     al, '"'
   je      .ClosedString
   mov     al, [esi]
@@ -95,13 +106,15 @@ InitArgs:
   inc     dword [.argc]
   add     dword [.argSize], 9 ; ptr + size + null
   jmp     .SkipSpace
- .NotAString:
+ .NotString:
 
  .CountChar:
+  test    al, al
+  jz      .DoneString
+  cmp     byte [eax + chTable], 0
+  je      .InvalidArgument
   test    byte [eax + chTable], chSpace
   jnz     .DoneChar
-  test    byte [eax + chTable], chPrint
-  jz      .DoneChar
   mov     al, [esi]
   inc     esi
   inc     dword [.argSize]
@@ -113,22 +126,103 @@ InitArgs:
 
  .DoneCounting:
 
-  ; TODO - Allocate memory for argv
+  ; Allocate memory, and populate the local argv
+  push    dword [.argSize]
+  call    alloc
+  mov     [.argv], eax
+  test    eax, eax
+  jz      .Exit
 
-  ; TODO - Copy arguments
+  ; Copy arguments
+  mov     esi, [.commandLine]
+  xor     eax, eax
 
-  mov     eax, [.argc]
-  mov     ecx, [.argSize]
+  mov     al, [esi]
+  inc     esi
+
+  mov     ecx, [.argc]
+  mov     ebx, [.argv]
+  lea     edi, [ebx + ecx * 4]
+
+ .SkipArgSpace:
+  test    al, al
+  jz      .DoneCopying
+  test    byte [eax + chTable], chSpace
+  jz      .DoneArgSpace
+  mov     al, [esi]
+  inc     esi
+  jmp     .SkipArgSpace
+ .DoneArgSpace:
+
+  mov     edx, edi
+  xor     ecx, ecx
+  mov     dword [edi], 0
+  add     edi, 4
+  mov     [ebx], edi
+  add     ebx, 4
+
+  cmp     al, '"'
+  jne     .NotArgString
+  mov     al, [esi]
+  inc     esi
+ .CopyArgString:
+  test    al, al
+  jz      .DoneArgString
+  cmp     byte [eax + chTable], 0
+  je      .InvalidArgument
+  cmp     al, '"'
+  je      .ClosedArgString
+  mov     [edi], al
+  inc     edi
+  mov     al, [esi]
+  inc     esi
+  inc     ecx
+  jmp     .CopyArgString
+ .ClosedArgString:
+  mov     al, [esi]
+  inc     esi
+ .DoneArgString:
+  mov     byte [edi], 0
+  mov     [edx], ecx
+  jmp     .SkipArgSpace
+ .NotArgString:
+
+ .CopyArgChar:
+  test    al, al
+  jz      .DoneArgString
+  cmp     byte [eax + chTable], 0
+  je      .InvalidArgument
+  test    byte [eax + chTable], chSpace
+  jnz     .DoneArgChar
+  mov     [edi], al
+  inc     edi
+  mov     al, [esi]
+  inc     esi
+  inc     ecx
+  jmp     .CopyArgChar
+ .DoneArgChar:
+  mov     byte [edi], 0
+  mov     [edx], ecx
+  jmp     .SkipArgSpace
 
  .InvalidArgument:
+  lea     eax, [.argv]
+  push    eax
+  call    free
+
+ .DoneCopying:
+  mov     ecx, [.argc]
+  mov     ebx, [.argv]
+  mov     [argc], ecx
+  mov     [argv], ebx
 
  .Exit:
-call dump
   pop     edi
   pop     esi
   pop     edx
   pop     ecx
   pop     ebx
+
   mov     esp, ebp
   pop     ebp
   ret
@@ -145,9 +239,11 @@ segment .text use32
 alloc:
   push    ebp
   mov     ebp, esp
-  push    ecx
 
   %define .size ebp + 8
+
+  push    ecx
+  push    edx
 
   mov     ecx, [.size]
   test    ecx, ecx
@@ -167,7 +263,9 @@ alloc:
   add     eax, 4
 
  .Exit:
+  pop     edx
   pop     ecx
+
   mov     esp, ebp
   pop     ebp
   ret 4
@@ -183,6 +281,7 @@ realloc:
   %define .newSize ebp + 8
 
   push    ecx
+  push    edx
   push    esi
 
   mov     esi, [.pointer]
@@ -215,6 +314,8 @@ realloc:
  .Exit:
   pop     esi
   pop     ecx
+  pop     edx
+
   mov     esp, ebp
   pop     ebp
   ret 8
@@ -225,10 +326,13 @@ realloc:
 free:
   push    ebp
   mov     ebp, esp
-  push    esi
-  push    edi
 
   %define .pointer ebp + 8
+
+  push    ecx
+  push    edx
+  push    esi
+  push    edi
 
   ; Load and validate reference pointer
   mov     esi, [.pointer]
@@ -253,6 +357,9 @@ free:
  .Exit:
   pop     edi
   pop     esi
+  pop     edx
+  pop     ecx
+
   mov     esp, ebp
   pop     ebp
   ret 4
@@ -272,8 +379,9 @@ fcreate:
 
   %define .fileName ebp + 8
 
-  push    esi
   push    ecx
+  push    edx
+  push    esi
 
   xor     eax, eax
 
@@ -309,8 +417,10 @@ fcreate:
   xor     eax, eax
 
  .Exit:
-  pop     ecx
   pop     esi
+  pop     edx
+  pop     ecx
+
   mov     esp, ebp
   pop     ebp
   ret 4
@@ -324,8 +434,9 @@ fupdate:
 
   %define .fileName ebp + 8
 
-  push    esi
   push    ecx
+  push    edx
+  push    esi
 
   xor     eax, eax
 
@@ -361,8 +472,10 @@ fupdate:
   xor     eax, eax
 
  .Exit:
-  pop     ecx
   pop     esi
+  pop     edx
+  pop     ecx
+
   mov     esp, ebp
   pop     ebp
   ret 4
@@ -376,8 +489,9 @@ fopen:
 
   %define .fileName ebp + 8
 
-  push    esi
   push    ecx
+  push    edx
+  push    esi
 
   xor     eax, eax
 
@@ -413,8 +527,10 @@ fopen:
   xor     eax, eax
 
  .Exit:
-  pop     ecx
   pop     esi
+  pop     edx
+  pop     ecx
+
   mov     esp, ebp
   pop     ebp
   ret 4
@@ -428,6 +544,8 @@ fclose:
 
   %define .handle ebp + 8
 
+  push    ecx
+  push    edx
   push    esi
 
   mov     esi, [.handle]
@@ -443,6 +561,9 @@ fclose:
 
  .Exit:
   pop     esi
+  pop     edx
+  pop     ecx
+
   mov     esp, ebp
   pop     ebp
   ret 4
@@ -461,6 +582,8 @@ fread:
   push    dword 0
   %define .result ebp - 4
 
+  push    ecx
+  push    edx
   push    esi
   push    edi
 
@@ -491,6 +614,9 @@ fread:
  .Exit:
   pop     edi
   pop     esi
+  pop     edx
+  pop     ecx
+
   mov     esp, ebp
   pop     ebp
   ret 12
@@ -508,6 +634,8 @@ freadch:
   push    dword 0
   %define .result ebp - 4
 
+  push    ecx
+  push    edx
   push    esi
   push    edi
 
@@ -538,6 +666,9 @@ freadch:
  .Exit:
   pop     edi
   pop     esi
+  pop     edx
+  pop     ecx
+
   mov     esp, ebp
   pop     ebp
   ret 8
@@ -556,6 +687,8 @@ fwrite:
   push    dword 0
   %define .result ebp - 4
 
+  push    ecx
+  push    edx
   push    esi
   push    edi
 
@@ -586,6 +719,9 @@ fwrite:
  .Exit:
   pop     edi
   pop     esi
+  pop     edx
+  pop     ecx
+
   mov     esp, ebp
   pop     ebp
   ret 12
@@ -603,6 +739,8 @@ fwritech:
   push    dword 0
   %define .result ebp - 4
 
+  push    ecx
+  push    edx
   push    esi
   push    edi
 
@@ -633,6 +771,9 @@ fwritech:
  .Exit:
   pop     edi
   pop     esi
+  pop     edx
+  pop     ecx
+
   mov     esp, ebp
   pop     ebp
   ret 8
@@ -646,6 +787,9 @@ fseek:
 
   %define .handle ebp + 12
   %define .offset ebp + 8
+
+  push    ecx
+  push    edx
 
   ; DWORD SetFilePointer( HANDLE hFile, LONG lDistanceToMove,
   ;   PLONG lpDistanceToMoveHigh, DWORD dwMoveMethod )
@@ -663,6 +807,9 @@ fseek:
   mov     eax, 1
 
  .Exit:
+  pop     edx
+  pop     ecx
+
   mov     esp, ebp
   pop     ebp
   ret 8
@@ -677,6 +824,8 @@ fpos:
   %define .handle ebp + 12
   %define .pos    ebp + 8
 
+  push    ecx
+  push    edx
   push    edi
 
   xor     eax, eax
@@ -704,6 +853,9 @@ fpos:
 
  .Exit:
   pop     edi
+  pop     edx
+  pop     ecx
+
   mov     esp, ebp
   pop     ebp
   ret 8
@@ -718,6 +870,8 @@ fsize:
   %define .handle ebp + 12
   %define .size   ebp + 8
 
+  push    ecx
+  push    edx
   push    edi
 
   xor     eax, eax
@@ -742,6 +896,9 @@ fsize:
 
  .Exit:
   pop     edi
+  pop     edx
+  pop     ecx
+
   mov     esp, ebp
   pop     ebp
   ret 4
@@ -755,6 +912,9 @@ fseteof:
 
   %define .handle  ebp + 8
 
+  push    ecx
+  push    edx
+
   ; BOOL SetEndOfFile( HANDLE hFile )
   push    dword [.handle]
   call    [SetEndOfFile]
@@ -764,6 +924,9 @@ fseteof:
   mov     eax, 1
 
  .Exit:
+  pop     edx
+  pop     ecx
+
   mov     esp, ebp
   pop     ebp
   ret 8
@@ -786,6 +949,8 @@ echostring:
   push    dword 0
   %define .tempWritten ebp - 4
 
+  push    ecx
+  push    edx
   push    esi
 
   mov     esi, [.strValue]
@@ -802,6 +967,9 @@ echostring:
 
  .Exit:
   pop     esi
+  pop     edx
+  pop     ecx
+
   mov     esp, ebp
   pop     ebp
   ret 4
@@ -825,6 +993,7 @@ echouint:
 
   push    ebx
   push    ecx
+  push    edx
   push    edi
 
   mov     eax, [.uintValue]
@@ -854,8 +1023,10 @@ echouint:
 
  .Exit:
   pop     edi
+  pop     edx
   pop     ecx
   pop     ebx
+
   mov     esp, ebp
   pop     ebp
   ret 4
@@ -875,4 +1046,3 @@ segment .data use32
 ; =======
 ; Strings
 ; =======
-

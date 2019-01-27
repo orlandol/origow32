@@ -5,7 +5,6 @@
 
 segment .text use32
 
-  %include "sys.inc"
   %include "rtl.inc"
 
 ..start:
@@ -143,8 +142,8 @@ segment .text use32
 
 segment .data use32
 
-                   dd 22
-  strAllocating:   db "Allocating memory...",13,10,0
+                   dd 24
+  strAllocating:   db 13,10,"Allocating memory...",13,10,0
 
                    dd 24
   strInitializing: db "Initializing memory...",13,10,0

@@ -5,7 +5,6 @@
 
 segment .text use32
 
-  %include "sys.inc"
   %include "rtl.inc"
   
 ..start:

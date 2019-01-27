@@ -1,3 +1,5 @@
+%ifndef INC_CHTABLE
+%define INC_CHTABLE
 
   ; Character codes
   %define chSpace     (1 << 0)
@@ -9,7 +11,7 @@
   %define chDigit     (1 << 6)
   %define chIdent     (1 << 7)
 
-section .data
+section .data use32
 
 chTable:
   times 9 db 0           ; ASCII 0..9
@@ -31,3 +33,5 @@ chTable:
   times 20 db (chPrint | chAlpha | chIdent) ; g..z
   times 4 db chPrint     ; { | } ~
   times 128 db 0         ; ASCII 127..255
+
+%endif

@@ -3,7 +3,6 @@
 
   BITS 32
 
-  %include "sys.inc"
   %include "debug.inc"
 
 segment .text use32

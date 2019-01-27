@@ -5,7 +5,6 @@
 
 segment .text use32
 
-  %include "sys.inc"
   %include "rtl.inc"
 
 ..start:
@@ -197,7 +196,7 @@ sysecho:
 
 segment .data use32
 
-  strAllocating:   db "Allocating memory...",13,10,0
+  strAllocating:   db 13,10,"Allocating memory...",13,10,0
   strInitializing: db "Initializing memory...",13,10,0
   strValidating:   db "Validating memory...",13,10,0
   strResizing:     db "Resizing memory...",13,10,0

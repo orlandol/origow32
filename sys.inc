@@ -1,3 +1,5 @@
+%ifndef INC_SYS
+%define INC_SYS
 
 ; ====================
 ; Win32 error messages
@@ -187,3 +189,4 @@
   extern GetStdHandle
   import GetStdHandle kernel32.dll
 
+%endif
