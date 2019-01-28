@@ -7,6 +7,7 @@
 
 segment .text use32
 
+run:
 ..start:
   push    ebp
   mov     ebp, esp

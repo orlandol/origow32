@@ -7,6 +7,7 @@ segment .text use32
 
   %include "rtl.inc"
 
+run:
 ..start:
   push    ebp
   mov     ebp, esp
@@ -767,61 +768,24 @@ TestOpen:
 
 segment .data use32
 
-                dd 8
-  testFileName: db 'test.txt',0
-
-                 dd 26
-  lowerTestText: db 'abcdefghijklmnopqrstuvwxyz',0
-
-                 dd 26
-  upperTestText: db 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',0
-
-                 dd 41
-  testingCreate: db 13,10,'Testing create file read/write I/O...',13,10,0
-
-                 dd 41
-  testingUpdate: db 13,10,'Testing update file read/write I/O...',13,10,0
-
-               dd 39
-  testingOpen: db 13,10,'Testing oppen file read only I/O...',13,10,0
-
-               dd 16
-  testsPassed: db 13,10,'Tests passed',13,10,0
-
-                 dd 18
-  fcreateFailed: db 13,10,'fcreate FAILED',13,10,0
-
-                 dd 18
-  fupdateFailed: db 13,10,'fupdate FAILED',13,10,0
-
-               dd 16
-  fopenFailed: db 13,10,'fopen FAILED',13,10,0
-
-                dd 17
-  fcloseFailed: db 13,10,'fclose FAILED',13,10,0
-
-               dd 16
-  freadFailed: db 13,10,'fread FAILED',13,10,0
-
-                 dd 18
-  freadchFailed: db 13,10,'freadch FAILED',13,10,0
-
-                dd 17
-  fwriteFailed: db 13,10,'fwrite FAILED',13,10,0
-
-                  dd 19
-  fwritechFailed: db 13,10,'fwritech FAILED',13,10,0
-
-               dd 16
-  fseekFailed: db 13,10,'fseek FAILED',13,10,0
-
-              dd 15
-  fposFailed: db 13,10,'fpos FAILED',13,10,0
-
-               dd 16
-  fsizeFailed: db 13,10,'fsize FAILED',13,10,0
-
-                 dd 18
-  fseteofFailed: db 13,10,'fseteof FAILED',13,10,0
+  declstring testFileName, 'test.txt'
+  declstring lowerTestText, 'abcdefghijklmnopqrstuvwxyz'
+  declstring upperTestText, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  declstring testingCreate, 13,10,'Testing create file read/write I/O...',13,10
+  declstring testingUpdate, 13,10,'Testing update file read/write I/O...',13,10
+  declstring testingOpen, 13,10,'Testing oppen file read only I/O...',13,10
+  declstring testsPassed, 13,10,'Tests passed',13,10
+  declstring fcreateFailed, 13,10,'fcreate FAILED',13,10
+  declstring fupdateFailed, 13,10,'fupdate FAILED',13,10
+  declstring fopenFailed, 13,10,'fopen FAILED',13,10
+  declstring fcloseFailed, 13,10,'fclose FAILED',13,10
+  declstring freadFailed, 13,10,'fread FAILED',13,10
+  declstring freadchFailed, 13,10,'freadch FAILED',13,10
+  declstring fwriteFailed, 13,10,'fwrite FAILED',13,10
+  declstring fwritechFailed, 13,10,'fwritech FAILED',13,10
+  declstring fseekFailed, 13,10,'fseek FAILED',13,10
+  declstring fposFailed, 13,10,'fpos FAILED',13,10
+  declstring fsizeFailed, 13,10,'fsize FAILED',13,10
+  declstring fseteofFailed, 13,10,'fseteof FAILED',13,10
 
 section .bss use32

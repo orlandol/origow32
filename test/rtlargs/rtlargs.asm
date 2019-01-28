@@ -3,10 +3,11 @@
 
   BITS 32
 
-  %include "rtl.inc"
+  %include 'rtl.inc'
 
 segment .text use32
 
+run:
 ..start:
   push    ebp
   mov     ebp, esp
@@ -58,16 +59,9 @@ segment .text use32
 
 segment .data use32
 
-                dd 23
-  argCountText: db 13,10,"Number of arguments: ",0
-
-                   dd 30
-  listingArgsText: db 13,10,"Listing program arguments...",13,10,0
-
-              dd 3
-  argIdxOpen: db 13,10,"[",0
-
-               dd 2
-  argIdxClose: db "] ",0
+  declstring argCountText, 13,10,'Number of arguments: '
+  declstring listingArgsText, 13,10,'Listing program arguments...',13,10
+  declstring argIdxOpen, 13,10,'['
+  declstring argIdxClose, '] '
 
 section .bss use32

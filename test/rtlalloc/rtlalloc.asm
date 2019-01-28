@@ -7,6 +7,7 @@ segment .text use32
 
   %include "rtl.inc"
 
+run:
 ..start:
   push    ebp
   mov     ebp, esp
@@ -142,26 +143,13 @@ segment .text use32
 
 segment .data use32
 
-                   dd 24
-  strAllocating:   db 13,10,"Allocating memory...",13,10,0
-
-                   dd 24
-  strInitializing: db "Initializing memory...",13,10,0
-
-                   dd 22
-  strValidating:   db "Validating memory...",13,10,0
-
-                   dd 20
-  strResizing:     db "Resizing memory...",13,10,0
-
-                   dd 21
-  strReleasing:    db "Releasing memory...",13,10,0
-
-                   dd 16
-  strFailed:       db 13,10,"Test FAILED",13,10,0
-
-                   dd 16
-  strPassed:       db 13,10,"Tests passed",13,10,0
+  declstring strAllocating, 13,10,'Allocating memory...',13,10
+  declstring strInitializing, 'Initializing memory...',13,10
+  declstring strValidating, 'Validating memory...',13,10
+  declstring strResizing, 'Resizing memory...',13,10
+  declstring strReleasing, 'Releasing memory...',13,10
+  declstring strFailed, 13,10,'Test FAILED',13,10
+  declstring strPassed, 13,10,'Tests passed',13,10
 
 section .bss use32
 

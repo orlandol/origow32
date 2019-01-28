@@ -2,6 +2,17 @@
 %include "sys.inc"
 %include "chtable.inc"
 
+; ==========
+; RTL macros
+; ==========
+
+  %macro declstring 2+
+        dd %%strEnd - %%str - 1
+    %%str:
+    %1: db %2,0
+    %%strEnd:
+  %endmacro
+
 ; =========
 ; RTL state
 ; =========

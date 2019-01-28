@@ -1,10 +1,10 @@
 Test Program Status
 -------------------
-chartab  - Created
 dbgdump  - Done
-rtlalloc - In progress
-rtlargs  - In progress
+emitcg   - In Progress
+rtlalloc - Done
+rtlargs  - Done
 rtlecho  - Done
+rtlfile  - Done
 sysalloc - Done
 sysecho  - Done
-sysfile  - In progress

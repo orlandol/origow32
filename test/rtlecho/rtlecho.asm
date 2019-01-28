@@ -6,7 +6,8 @@
 segment .text use32
 
   %include "rtl.inc"
-  
+
+run:
 ..start:
   push    ebp
   mov     ebp, esp
@@ -34,7 +35,6 @@ segment .text use32
 
 segment .data use32
 
-              dd 15
-  helloWorld: db "Hello, world!", 13, 10, 0
+  declstring helloWorld, 'Hello, world!',13,10
 
 section .bss use32

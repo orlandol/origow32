@@ -7,6 +7,7 @@ segment .text use32
 
   %include "rtl.inc"
 
+run
 ..start:
   push    ebp
   mov     ebp, esp
