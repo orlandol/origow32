@@ -5,7 +5,6 @@
 
 segment .text use32
 
-  %include "debug.inc"
   %include "rtl.inc"
   %include "codegen.inc"
 

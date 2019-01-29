@@ -1,7 +1,7 @@
 Test Program Status
 -------------------
 dbgdump  - Done
-emitcg   - In Progress
+emitcg   - Done
 rtlalloc - Done
 rtlargs  - Done
 rtlecho  - Done

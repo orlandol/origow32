@@ -50,7 +50,7 @@ emit:
   %define .instruction ebp + 12
   %define .flags       ebp + 8
 
-  sub     ebp, INSTR_BUFFER_SIZE
+  sub     esp, INSTR_BUFFER_SIZE
   %define .instrBuffer ebp - INSTR_BUFFER_SIZE
 
   push    ebx
