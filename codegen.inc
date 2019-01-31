@@ -1,6 +1,10 @@
 %ifndef INC_CODEGEN
 %define INC_CODEGEN
 
+; =================
+; Emit declarations
+; =================
+
   %define INSTR_BUFFER_SIZE 32
 
   %define INSTR_GROUP1_PREFIX 0

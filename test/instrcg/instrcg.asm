@@ -6,6 +6,7 @@
 segment .text use32
 
   %include "rtl.inc"
+  %include "x86table.inc"
 
 run:
 ..start:
