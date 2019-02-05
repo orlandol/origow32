@@ -43,6 +43,9 @@
   %define HAS_IMM3          (1 << (31 - INSTR_IMM3))
   %define HAS_IMM4          (1 << (31 - INSTR_IMM4))
 
+  %define param86RegW 1
+  %define param86ImmW 2
+
 ;
 ; func bool emit( file outHandle; InstructionBuffer instruction; uint flags )
 ;
