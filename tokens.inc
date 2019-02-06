@@ -195,6 +195,7 @@
 ; Memory register flags
 ; =====================
 
+  ; 16-bit memory flags
   %define mrX86RegBX  8
   %define mrX86RegBP  4
   %define mrX86RegSI  2
@@ -225,7 +226,7 @@
 ; x86 general tokens
 ; ==================
 
-  x86Mem (x86General + 1)
+  %define x86Mem (x86General + 1)
 
 ; ==================================
 ; x86 assembler reserved word tokens

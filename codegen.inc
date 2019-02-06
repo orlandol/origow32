@@ -47,7 +47,7 @@
   %define param86ImmW 2
 
 ;
-; func bool emit( file outHandle; InstructionBuffer instruction; uint flags )
+; func bool emit( file outHandle, InstructionBuffer instruction, uint flags )
 ;
 emit:
   push    ebp
@@ -115,5 +115,23 @@ emit:
   pop     ebp
 
   ret 12
+
+;
+; func bool x86Gen( uint opToken, x86Param param1, param2, param3 )
+;
+x86Gen:
+  push    ebp
+  mov     ebp, esp
+
+  %define opToken ebp + 20
+  %define param1  ebp + 16
+  %define param2  ebp + 12
+  %define param3  ebp + 8
+
+ .Exit:
+  mov     esp, ebp
+  pop     ebp
+
+  ret 16
 
 %endif
