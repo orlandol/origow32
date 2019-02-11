@@ -1,8 +1,8 @@
-Test Program Status
--------------------
+ Test Program Status
+----------------------
+codegen  - In progress
 dbgdump  - Done
-emitcg   - Done
-instrcg  - Prototype
+emit     - Done
 rtlalloc - Done
 rtlargs  - Done
 rtlecho  - Done
