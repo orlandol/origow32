@@ -17,7 +17,7 @@
 ; ===========
 
   %define maskGroup    0xFE00
-  %define maskSubToken 0x01FF
+  %define maskSubtoken 0x01FF
 
 ; ============
 ; Token groups

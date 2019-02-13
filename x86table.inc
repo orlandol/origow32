@@ -51,13 +51,13 @@ segment .data use32
 ; ==================================================================
   encode86Table:
     encode86Call:
-      dd x86Mem, $ + 24
+      dd x86Mem, 24
       dd 0, 0
       dd 0, 0
       db 0b1111_1111, 0, 0, 0b00_010_000
       db encode86Op1 | encode86ModRM, param86MemW, 0, 0
 
-      dd x86Reg16, $ + 24
+      dd x86Reg16, 24
       dd 0, 0
       dd 0, 0
       db 0b1111_1111, 0, 0, 0b11_010_000

@@ -1,6 +1,8 @@
 %ifndef INC_CODEGEN
 %define INC_CODEGEN
 
+  %include "tokens.inc"
+
 ; =================
 ; Emit declarations
 ; =================
@@ -116,22 +118,130 @@ emit:
 
   ret 12
 
+
+; ===========================
+; Code generator declarations
+; ===========================
+
 ;
-; func bool x86Gen( uint opToken, x86Param param1, param2, param3 )
+; func bool x86GenMemParam( x86Instruction instruction,
+;   uint baseReg, indexReg, scale, dispType, int displacement )
 ;
-x86Gen:
+x86GenMemParam:
   push    ebp
   mov     ebp, esp
 
-  %define opToken ebp + 20
-  %define param1  ebp + 16
-  %define param2  ebp + 12
-  %define param3  ebp + 8
+  %define .instruction  ebp + 28
+  %define .baseReg      ebp + 24
+  %define .indexReg     ebp + 20
+  %define .scale        ebp + 16
+  %define .dispType     ebp + 12
+  %define .displacement ebp + 8
+
+  %define .result ebp - 4
+  push    dword 0
+
+  %define .memRegs ebp - 8
+  push    dword 0
+
+  %define .modRM ebp - 12
+  push    dword 0b00_000_000
+
+  push    ebx
+  push    ecx
+  push    edx
+  push    esi
+  push    edi
+
+  ; Validate parameters
+  mov     eax, [.baseReg]
+  mov     ecx, [.indexReg]
+  mov     edx, [.dispType]
+  mov     ebx, eax
+  mov     esi, eax
+  and     eax, maskGroup
+
+  or      esi, ecx
+  or      esi, edx
+  jz      .Exit
+
+  ; TODO - Default standalone displacement size depends on addressMode
+
+  ; UNTESTED - Process 16-bit memory address
+  cmp     eax, x86Reg16
+  jne     .NotReg16
+
+  ; Check for combinations of base register BX
+  cmp     ebx, x86RegBX
+  jne     .NotBX
+  xor     eax, eax
+  cmp     ecx, x86RegSI
+  je      .CheckDisp16
+  inc     eax
+  cmp     ecx, x86RegDI
+  je      .CheckDisp16
+  or      eax, 0x111
+  test    ebx, ebx
+  jz      .CheckDisp16
+  jmp     .Exit
+ .NotBX:
+
+  ; Check for combinations of base register BP
+  cmp     ebx, x86RegBP
+  jne     .NotBP
+  mov     eax, 0b010
+  cmp     ecx, x86RegSI
+  je      .CheckDisp16
+  inc     eax
+  cmp     ecx, x86RegDI
+  je      .CheckDisp16
+  mov     ebx, 0b110
+  test    eax, eax
+  jz      .CheckDisp16
+  jmp     .Exit
+ .NotBP:
+
+  ; Check for standalone [SI]
+  mov     eax, 0b100
+  cmp     ebx, x86RegSI
+  je      .CheckDisp16
+  cmp     ebx, x86RegDI
+  je      .CheckDisp16
+  jmp     .Exit
+
+ .CheckDisp16:
+
+ .NotReg16:
+
+  ; TODO - Process 32-bit memory address
+
+ .Exit:
+  mov     eax, [.result]
+
+  pop     edi
+  pop     esi
+  pop     edx
+  pop     ecx
+  pop     ebx
+
+  mov     esp, ebp
+  pop     ebp
+  ret 24
+
+;
+; func bool x86GenOpRegReg( uint opToken, destReg, srcReg )
+;
+x86GenOpRegReg:
+  push    ebp
+  mov     ebp, esp
+
+  %define .opToken ebp + 16
+  %define .destReg ebp + 12
+  %define .srcReg ebp + 8
 
  .Exit:
   mov     esp, ebp
   pop     ebp
-
-  ret 16
+  ret 12
 
 %endif
