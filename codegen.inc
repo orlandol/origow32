@@ -165,52 +165,97 @@ x86GenMemParam:
   or      esi, edx
   jz      .Exit
 
+  mov     edi, [.instruction]
+  test    edi, edi
+  jz      .Exit
+
   ; TODO - Default standalone displacement size depends on addressMode
 
   ; UNTESTED - Process 16-bit memory address
   cmp     eax, x86Reg16
   jne     .NotReg16
 
-  ; Check for combinations of base register BX
+  cmp     dword [.scale], 0
+  jne     .Exit
+
+  xor     esi, esi
+
   cmp     ebx, x86RegBX
   jne     .NotBX
-  xor     eax, eax
-  cmp     ecx, x86RegSI
-  je      .CheckDisp16
-  inc     eax
-  cmp     ecx, x86RegDI
-  je      .CheckDisp16
-  or      eax, 0x111
-  test    ebx, ebx
-  jz      .CheckDisp16
-  jmp     .Exit
+  or      esi, mrX86RegBX
+  jmp     .CheckIndex
  .NotBX:
-
-  ; Check for combinations of base register BP
   cmp     ebx, x86RegBP
   jne     .NotBP
-  mov     eax, 0b010
+  or      esi, mrX86RegBP
+  jmp     .CheckIndex
+ .NotBP:
+  jmp     .Exit
+
+ .CheckIndex:
   cmp     ecx, x86RegSI
+  jne     .NotSI
+  or      esi, mrX86RegSI
+  jmp     .EncodeRegs
+ .NotSI:
+  cmp     ecx, x86RegDI
+  jne     .NotDI
+  or      esi, mrX86RegDI
+  jmp     .EncodeRegs
+ .NotDI:
+  jmp     .Exit
+
+ .EncodeRegs:
+  xor     eax, eax
+  cmp     esi, (mrX86RegBX | mrX86RegSI)
   je      .CheckDisp16
   inc     eax
-  cmp     ecx, x86RegDI
+  cmp     esi, (mrX86RegBX | mrX86RegDI)
   je      .CheckDisp16
-  mov     ebx, 0b110
-  test    eax, eax
+  inc     eax
+  cmp     esi, (mrX86RegBP | mrX86RegSI)
+  je      .CheckDisp16
+  inc     eax
+  cmp     esi, (mrX86RegBP | mrX86RegDI)
+  je      .CheckDisp16
+  inc     eax
+  cmp     esi, mrX86RegSI
+  je      .CheckDisp16
+  inc     eax
+  cmp     esi, mrX86RegDI
+  je      .CheckDisp16
+  inc     eax
+  cmp     esi, mrX86RegBP
+  je      .CheckDisp16
+  test    esi, esi
   jz      .CheckDisp16
+  inc     eax
+  cmp     esi, mrX86RegBX
+  je      .CheckDisp16
   jmp     .Exit
- .NotBP:
 
-  ; Check for standalone [SI]
-  mov     eax, 0b100
-  cmp     ebx, x86RegSI
-  je      .CheckDisp16
-  cmp     ebx, x86RegDI
-  je      .CheckDisp16
-  jmp     .Exit
+ .CheckDisp8:
+  test    edx, edx
+  jnz     .HasDisp
+  mov     edx, valInt
+  mov     dword [.displacement], 0
 
  .CheckDisp16:
+  mov     esi, [.displacement]
+  test    edx, edx
+  jz      .EncodeMem16
+  add     eax, 0b01_000_000
+  cmp     esi, -128
+  jl      .NotDisp8
+  cmp     esi, 127
+  jg      .NotDisp8
+  jmp     .EncodeMem16
+ .NotDisp8:
+  add     eax, 0b01_000_000
 
+ .EncodeMem16:
+  
+  jmp     .Exit
  .NotReg16:
 
   ; TODO - Process 32-bit memory address
