@@ -39,41 +39,47 @@ segment .data use32
 ; ==================================================================
 ;                            Encode item
 ; ------------------------------------------------------------------
-; uint param1Token, nextParam1
-; uint param2Token, nextParam2
-; uint param3Token, nextParam3
+; uint param1Token, param2Token, param3Token, nextFormat
 ; uint8 opcode1, opcode2, opcode3, modrm
-; uint8 encodeFields, param1Operator, param2Operator, param3Operator
+; uint encodeFields
+; uint8 param1Operator, param2Operator, param3Operator, rsvd
 ; ------------------------------------------------------------------
 ;                     if paramXToken == token
 ;              then paramXToken is compared directly
 ;         else paramXToken is compared to the token group
 ; ==================================================================
   encode86Table:
-    encode86Call:
-      dd x86Mem, 24
-      dd 0, 0
-      dd 0, 0
-      db 0b1111_1111, 0, 0, 0b00_010_000
-      db encode86Op1 | encode86ModRM, param86MemW, 0, 0
+  encode86Call:
+    dd valUint, 0, 0, $+16
+    db 0b1110_1000, 0, 0, 0
+    dd HAS_OPCODE1
+    db 0, 0, 0, 0
 
-      dd x86Reg16, 24
-      dd 0, 0
-      dd 0, 0
-      db 0b1111_1111, 0, 0, 0b11_010_000
-      db encode86Op1 | encode86ModRM, param86RegRMW, 0, 0
+    dd x86Reg32, 0, 0, $+16
+    db 0b1111_1111, 0, 0, 0b11_010_000
+    dd HAS_OPCODE1 | HAS_MODRM
+    db param86AddMod321, 0, 0, 0
 
-      dd x86Reg32, 0
-      dd 0, 0
-      dd 0, 0
-      db 0b1111_1111, 0, 0, 0b11_010_000
-      db encode86Op1 | encode86ModRM, param86RegRMW, 0, 0
+    dd x86Mem, 0, 0, 0
+    db 0b1111_1111, 0, 0, 0b00_010_000
+    dd HAS_OPCODE1 | HAS_MODRM
+    db 0, 0, 0, 0
 
-    encode86Push:
-      dd valUint, 0, 0
-      dd 0, 0, 0
-      dd 0, 0, 0
-      db 0b0110_1000, 0, 0, 0
-      db encode86Op1, param86UintW, 0, 0
+  encode86Push:
+    dd x86Reg16, 0, 0, $+16
+    db 0b1111_1111, 0, 0, 0b11_110_000
+    db HAS_OPCODE1 | HAS_MODRM
+    db param86AddMod321, 0, 0, 0
+
+    dd x86Reg32, 0, 0, $+16
+    db 0b1111_1111, 0, 0, 0b11_110_000
+    db HAS_OPCODE1 | HAS_MODRM
+    db param86AddMod321, 0, 0, 0
+
+    dd valUint, 0, 0, $+16
+    db 0b0110_1000, 0, 0, 0
+    db HAS_OPCODE1
+    db param86OpcodeS8, 0, 0, 0
+
 
 %endif

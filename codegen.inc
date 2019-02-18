@@ -124,10 +124,10 @@ emit:
 ; ===========================
 
 ;
-; func bool x86GenMemParam( x86Instruction instruction,
+; func bool x86EncodeMemW( x86Instruction instruction,
 ;   uint baseReg, indexReg, scale, dispType, int displacement )
 ;
-x86GenMemParam:
+x86EncodeMemW:
   push    ebp
   mov     ebp, esp
 
@@ -236,8 +236,8 @@ x86GenMemParam:
 
  .CheckDisp8:
   test    edx, edx
-  jnz     .HasDisp
-  mov     edx, valInt
+  jnz     .CheckDisp16
+  mov     edx, valInt8
   mov     dword [.displacement], 0
 
  .CheckDisp16:
@@ -245,12 +245,15 @@ x86GenMemParam:
   test    edx, edx
   jz      .EncodeMem16
   add     eax, 0b01_000_000
+  or      byte [edi + INSTR_MODRM], 0
   cmp     esi, -128
   jl      .NotDisp8
   cmp     esi, 127
   jg      .NotDisp8
+  mov     edx, valInt8
   jmp     .EncodeMem16
  .NotDisp8:
+  mov     edx, valInt
   add     eax, 0b01_000_000
 
  .EncodeMem16:
