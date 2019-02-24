@@ -3,9 +3,59 @@
 
   %include "tokens.inc"
 
-; =================
-; Emit declarations
-; =================
+; ====================================
+;            Keyword item
+; ------------------------------------
+; char[8] keyword
+; ------------------------------------
+; Resulting offset can be recalculated
+;   to point into token86Table
+; ====================================
+  %define SIZEOF_KEYWORD86_ENTRY 8
+
+; ========================
+;        Token item
+; ------------------------
+; uint op, encode
+; ========================
+  %define TOKEN86_OP     0
+  %define TOKEN86_ENCODE 4
+
+  %define SIZEOF_TOKEN86_ITEM 8
+
+; ==================================================================
+;                            Encode item
+; ------------------------------------------------------------------
+; uint   param1, param2, param3, nextFormat
+; uint8  opcode1, opcode2, opcode3, modrm
+; uint   emitFields
+; uint8  xform1, xform2, xform3, xformOp
+; uint32 rsvd
+; ------------------------------------------------------------------
+;                     if paramXToken == token
+;              then paramXToken is compared directly
+;         else paramXToken is compared to the token group
+; ==================================================================
+  %define ENCODE86_PARAM1     0
+  %define ENCODE86_PARAM2     4
+  %define ENCODE86_PARAM3     8
+  %define ENCODE86_NEXTFORMAT 12
+  %define ENCODE86_OPCODE1    16
+  %define ENCODE86_OPCODE2    17
+  %define ENCODE86_OPCODE3    18
+  %define ENCODE86_MODRM      19
+  %define ENCODE86_EMITFIELDS 20
+  %define ENCODE86_XFORM1     24
+  %define ENCODE86_XFORM1     25
+  %define ENCODE86_XFORM1     26
+  %define ENCODE86_XFORM1     27
+  %define ENCODE86_RSVD       28
+
+  %define SIZEOF_ENCODE86_ITEM 32
+
+; ==================
+; Instruction Buffer
+; ==================
 
   %define INSTR_BUFFER_SIZE 32
 
@@ -45,8 +95,11 @@
   %define HAS_IMM3          (1 << (31 - INSTR_IMM3))
   %define HAS_IMM4          (1 << (31 - INSTR_IMM4))
 
-  %define param86RegW 1
-  %define param86ImmW 2
+; =======
+; Emitter
+; =======
+
+segment .text use32
 
 ;
 ; func bool emit( file outHandle, InstructionBuffer instruction, uint flags )
@@ -118,34 +171,36 @@ emit:
 
   ret 12
 
+; ===============
+; Code generators
+; ===============
 
-; ===========================
-; Code generator declarations
-; ===========================
+segment .text use32
 
 ;
-; func bool x86EncodeMemW( x86Instruction instruction,
-;   uint baseReg, indexReg, scale, dispType, int displacement )
+; func bool x86GenOpMem( file handle, uint op, baseReg, indexReg, scale,
+;   int displacement, uint memSize )
 ;
-x86EncodeMemW:
+x86GenOpMem:
   push    ebp
   mov     ebp, esp
 
-  %define .instruction  ebp + 28
+  %define .handle       ebp + 32
+  %define .op           ebp + 28
   %define .baseReg      ebp + 24
   %define .indexReg     ebp + 20
   %define .scale        ebp + 16
-  %define .dispType     ebp + 12
-  %define .displacement ebp + 8
+  %define .displacement ebp + 12
+  %define .memSize      ebp + 8
 
   %define .result ebp - 4
   push    dword 0
 
-  %define .memRegs ebp - 8
+  %define .emitFields ebp - 8
   push    dword 0
 
-  %define .modRM ebp - 12
-  push    dword 0b00_000_000
+  %define .instruction ebp - (8 - INSTR_BUFFER_SIZE)
+  times (INSTR_BUFFER_SIZE / 4) push dword 0
 
   push    ebx
   push    ecx
@@ -153,115 +208,158 @@ x86EncodeMemW:
   push    esi
   push    edi
 
-  ; Validate parameters
-  mov     eax, [.baseReg]
-  mov     ecx, [.indexReg]
-  mov     edx, [.dispType]
-  mov     ebx, eax
-  mov     esi, eax
-  and     eax, maskGroup
+  mov     ebx, [.op]
+  lea     edi, [.instruction]
 
-  or      esi, ecx
-  or      esi, edx
+  cmp     ebx, lastX86Op
+  ja      .Exit
+  mov     esi, [ebx * 8 + encode86Table + TOKEN86_ENCODE]
+
+ .SearchInstruction:
+  cmp     dword [esi + ENCODE86_PARAM1], x86Mem
+  jne     .NextInstruction
+  cmp     dword [esi + ENCODE86_PARAM2], 0
+  jne     .NextInstruction
+  jmp     .FoundInstruction
+ .NextInstruction:
+  mov     esi, [esi + ENCODE86_NEXTFORMAT]
+  test    esi, esi
   jz      .Exit
+  cmp     esi, encode86TableEnd
+  jae     .Exit
+  jmp     .SearchInstruction
+ .FoundInstruction:
 
-  mov     edi, [.instruction]
-  test    edi, edi
-  jz      .Exit
+  mov     eax, [esi + ENCODE86_OPCODE1]
+  mov     [edi + INSTR_OPCODE1], eax
+  mov     eax, [esi + ENCODE86_EMITFIELDS]
+  mov     [.emitFields], eax
 
-  ; TODO - Default standalone displacement size depends on addressMode
+  mov     ecx, [.baseReg]
+  mov     edx, [.indexReg]
+  xor     ebx, ebx
+  mov     eax, ecx
+  and     ecx, mask86Operand
 
-  ; UNTESTED - Process 16-bit memory address
-  cmp     eax, x86Reg16
-  jne     .NotReg16
+  ; UNTESTED: Process a 16-bit address
+  cmp     ecx, x86Reg16
+  jne     .NotAddr16
 
+  ; Scale not allowed for 16-bit addresses
   cmp     dword [.scale], 0
   jne     .Exit
 
-  xor     esi, esi
-
-  cmp     ebx, x86RegBX
-  jne     .NotBX
-  or      esi, mrX86RegBX
-  jmp     .CheckIndex
- .NotBX:
-  cmp     ebx, x86RegBP
-  jne     .NotBP
-  or      esi, mrX86RegBP
-  jmp     .CheckIndex
- .NotBP:
+  ; Validate and initialize 16-bit base register
+  cmp     eax, x86RegBX
+  jne     .Addr16NotBX
+  or      ebx, mrX86RegBX
+  jmp     .Addr16DoneBase
+ .Addr16NotBX:
+  cmp     eax, x86RegBP
+  jne     .Addr16NotBP
+  or      ebx, mrX86RegBP
+  jmp     .Addr16DoneBase
+ .Addr16NotBP:
+  test    eax, eax
+  jz      .Addr16DoneBase
   jmp     .Exit
+ .Addr16DoneBase:
 
- .CheckIndex:
-  cmp     ecx, x86RegSI
-  jne     .NotSI
-  or      esi, mrX86RegSI
-  jmp     .EncodeRegs
- .NotSI:
-  cmp     ecx, x86RegDI
-  jne     .NotDI
-  or      esi, mrX86RegDI
-  jmp     .EncodeRegs
- .NotDI:
+  ; Validate and initialize 16-bit index register
+  cmp     eax, x86RegSI
+  jne     .Addr16NotSI
+  or      ebx, mrX86RegSI
+  jmp     .Addr16DoneIndex
+ .Addr16NotSI:
+  cmp     eax, x86RegDI
+  jne     .Addr16NotDI
+  or      ebx, mrX86RegDI
+  jmp     .Addr16DoneIndex
+ .Addr16NotDI:
+  test    eax, eax
+  jz      .Addr16DoneIndex
   jmp     .Exit
+ .Addr16DoneIndex:
 
- .EncodeRegs:
-  xor     eax, eax
-  cmp     esi, (mrX86RegBX | mrX86RegSI)
-  je      .CheckDisp16
-  inc     eax
-  cmp     esi, (mrX86RegBX | mrX86RegDI)
-  je      .CheckDisp16
-  inc     eax
-  cmp     esi, (mrX86RegBP | mrX86RegSI)
-  je      .CheckDisp16
-  inc     eax
-  cmp     esi, (mrX86RegBP | mrX86RegDI)
-  je      .CheckDisp16
-  inc     eax
-  cmp     esi, mrX86RegSI
-  je      .CheckDisp16
-  inc     eax
-  cmp     esi, mrX86RegDI
-  je      .CheckDisp16
-  inc     eax
-  cmp     esi, mrX86RegBP
-  je      .CheckDisp16
-  test    esi, esi
-  jz      .CheckDisp16
-  inc     eax
-  cmp     esi, mrX86RegBX
-  je      .CheckDisp16
-  jmp     .Exit
+  cmp     ebx, (mrX86RegBX | mrX86RegBP | mrX86RegSI | mrX86RegDI)
+  ja      .Exit
+  mov     al, [ebx + x86Addr16Table]
+  cmp     al, 0b11_111_111
+  je      .Exit
 
- .CheckDisp8:
-  test    edx, edx
-  jnz     .CheckDisp16
+  mov     ecx, [.displacement]
+
+  ; Special case: No base register, and no index register
+  test    ebx, ebx
+  jnz     .Addr16NotDispOnly
+  mov     edx, valUint16
+  mov     al, 0b00_000_110
+  jmp     .EncodeInstruction
+ .Addr16NotDispOnly:
+
+  ; Special case: Except BP as base register, ignore displacement 0
+  cmp     ebx, mrX86RegBP
+  je      .Addr16SkipDisp0
+  test    ecx, ecx
+  jnz     .Addr16SkipDisp0
+  xor     edx, edx
+  jmp     .EncodeInstruction
+ .Addr16SkipDisp0:
+
   mov     edx, valInt8
-  mov     dword [.displacement], 0
+  add     al, 0b01_000_000
+  cmp     ecx, -128
+  jle     .Addr16NotDisp8
+  cmp     ecx, 127
+  jge     .Addr16NotDisp8
+  add     al, 0b01_000_000
+  jmp     .EncodeInstruction
+ .Addr16NotDisp8:
+  mov     edx, valInt16
+  jmp     .EncodeInstruction
+ .NotAddr16:
 
- .CheckDisp16:
-  mov     esi, [.displacement]
-  test    edx, edx
-  jz      .EncodeMem16
-  add     eax, 0b01_000_000
-  or      byte [edi + INSTR_MODRM], 0
-  cmp     esi, -128
-  jl      .NotDisp8
-  cmp     esi, 127
-  jg      .NotDisp8
-  mov     edx, valInt8
-  jmp     .EncodeMem16
- .NotDisp8:
-  mov     edx, valInt
-  add     eax, 0b01_000_000
+  ; UNTESTED: Process a 32-bit address
+  cmp     ecx, x86Reg32
+  jne     .NotAddr32
 
- .EncodeMem16:
-  
-  jmp     .Exit
- .NotReg16:
+  ; TODO: Process 32-bit address
 
-  ; TODO - Process 32-bit memory address
+ .NotAddr32:
+
+  ; TODO: Process displacement only address
+
+  ; Prepare instruction buffer for emit
+ .EncodeInstruction:
+  or      [.instruction + INSTR_MODRM], al
+
+  cmp     edx, valInt8
+  jne     .NotEncodeDisp8
+  mov     [.instruction + INSTR_DISP1], ecx
+  or      dword [.emitFields], HAS_DISP1
+  jmp     .EmitInstruction
+ .NotEncodeDisp8:
+
+  cmp     edx, valInt16
+  jne     .NotEncodeDisp16
+  mov     [.instruction + INSTR_DISP1], ecx
+  or      dword [.emitFields], (HAS_DISP1 | HAS_DISP2)
+  jmp     .EmitInstruction
+ .NotEncodeDisp16:
+
+  cmp     edx, valInt32
+  jne     .NotEncodeDisp32
+  mov     [.instruction + INSTR_DISP1], ecx
+  or      dword [.emitFields], (HAS_DISP1 | HAS_DISP2 | HAS_DISP3 | HAS_DISP4)
+  jmp     .EmitInstruction
+ .NotEncodeDisp32:
+
+ .EmitInstruction:
+  push    dword [.handle]
+  push    edi
+  push    dword [.emitFields]
+  call    emit
+  mov     [.result], eax
 
  .Exit:
   mov     eax, [.result]
@@ -274,22 +372,54 @@ x86EncodeMemW:
 
   mov     esp, ebp
   pop     ebp
-  ret 24
+  ret 28
 
-;
-; func bool x86GenOpRegReg( uint opToken, destReg, srcReg )
-;
-x86GenOpRegReg:
-  push    ebp
-  mov     ebp, esp
+; =====================
+; Code generator tables
+; =====================
 
-  %define .opToken ebp + 16
-  %define .destReg ebp + 12
-  %define .srcReg ebp + 8
+segment .data use32
 
- .Exit:
-  mov     esp, ebp
-  pop     ebp
-  ret 12
+  x86Addr16Table:
+    db 0b11_111_111 ;  0 - Invalid
+    db 0b00_000_101 ;  1 - [DI]
+    db 0b00_000_100 ;  2 - [SI]
+    db 0b11_111_111 ;  3 - Invalid
+    db 0b00_000_110 ;  4 - [BP + <DISP8 | DISP16>] if not [DISP16]
+    db 0b00_000_011 ;  5 - [BP + DI]
+    db 0b00_000_010 ;  6 - [BP + SI]
+    db 0b11_111_111 ;  7 - Invalid
+    db 0b00_000_111 ;  8 - [BX]
+    db 0b00_000_001 ;  9 - [BX + DI]
+    db 0b00_000_000 ; 10 - [BX + SI]
+    db 0b11_111_111 ; 11 - Invalid
+    db 0b11_111_111 ; 12 - Invalid
+    db 0b11_111_111 ; 13 - Invalid
+    db 0b11_111_111 ; 14 - Invalid
+    db 0b11_111_111 ; 15 - Invalid
+
+  keyword86Table:
+    db 'call',0,0,0,0
+    db 'push',0,0,0,0
+
+  token86Table:
+    dd x86Call, encode86Call
+    dd x86Push, encode86Push
+
+  encode86Table:
+  encode86Call:
+    dd x86Mem, 0, 0, 0
+    db 0b1111_1111, 0, 0, 0b00_010_000
+    dd HAS_OPCODE1 | HAS_MODRM
+    db 0, 0, 0, 0
+    dd 0
+
+  encode86Push:
+    dd valUint, 0, 0, 0
+    db 0b0110_1000, 0, 0, 0
+    dd HAS_OPCODE1
+    db 0, 0, 0, 0
+    dd 0
+  encode86TableEnd:
 
 %endif

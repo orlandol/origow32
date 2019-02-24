@@ -16,8 +16,8 @@
 ; Token masks
 ; ===========
 
-  %define maskGroup    0xFE00
-  %define maskSubtoken 0x01FF
+  %define maskGroup    0b1111111_000000000
+  %define maskSubtoken 0b0000000_111111111
 
 ; ============
 ; Token groups
@@ -30,21 +30,17 @@
   %define setSymbol  ( 4 << 9)
   %define x86General ( 5 << 9)
   %define x86Ident   ( 6 << 9)
-  %define x86SReg    ( 7 << 9)
-  %define x86Reg8    ( 8 << 9)
-  %define x86Reg16   ( 9 << 9)
-  %define x86Reg32   (10 << 9)
 
 ; =========================
 ; Operator precedence masks
 ; =========================
 
-  %define maskPrec    0x01E0
-  %define maskOper    0x001F
+  %define maskPrec    0b0000000_1111_00000
+  %define maskOper    0x0000000_0000_11111
 
-; ==========================
-; Operator precedence groups
-; ==========================
+; =============================
+; Operator precedence subgroups
+; =============================
 
   %define prec00      (0 << 5)
   %define prec01      (1 << 5)
@@ -127,12 +123,16 @@
 
   %define valFalse  (valLiteral + 0)
   %define valTrue   (valLiteral + 1)
-  %define valInt    (valLiteral + 2)
-  %define valInt8   (valLiteral + 3)
-  %define valUint   (valLiteral + 4)
-  %define valUint8  (valLiteral + 5)
-  %define valString (valLiteral + 6)
-  %define valChar   (valLiteral + 7)
+  %define valString (valLiteral + 2)
+  %define valChar   (valLiteral + 3)
+  %define valInt    (valLiteral + 4)
+  %define valInt8   (valLiteral + 5)
+  %define valInt16  (valLiteral + 6)
+  %define valInt32  (valLiteral + 7)
+  %define valUint   (valLiteral + 8)
+  %define valUint8  (valLiteral + 9)
+  %define valUint16 (valLiteral + 10)
+  %define valUint32 (valLiteral + 11)
 
 ; ===============
 ; Operator tokens
@@ -201,32 +201,72 @@
   %define mrX86RegSI  2
   %define mrX86RegDI  1
 
-; ===================================
-; x86 Instruction format byte offsets
-; ===================================
+; =========
+; x86 masks
+; =========
 
-  %define x86ifInstPrefix     0
-  %define x86ifAddrSizePrefix 1
-  %define x86ifOperSizePrefix 2
-  %define x86ifSegOverride    3
-  %define x86ifOpcode1        4
-  %define x86ifOpcode2        5
-  %define x86ifModRM          6
-  %define x86ifSIB            7
-  %define x86ifDisp0          8
-  %define x86ifDisp1          9
-  %define x86ifDisp2          10
-  %define x86ifDisp3          11
-  %define x86ifImm0           12
-  %define x86ifImm1           13
-  %define x86ifImm2           14
-  %define x86ifImm3           15
+  %define mask86Operand    0b1111111_11111_0000
+  %define mask86SubOperand 0b0000000_00000_1111
 
 ; ==================
 ; x86 general tokens
 ; ==================
 
-  %define x86Mem (x86General + 1)
+  %define x86Mem   (x86General + (0 << 4) + 1)
+  %define x86SReg  (x86General + (1 << 4) + 0)
+  %define x86Reg8  (x86General + (2 << 4) + 0)
+  %define x86Reg16 (x86General + (3 << 4) + 0)
+  %define x86Reg32 (x86General + (4 << 4) + 0)
+
+; ====================================
+; x86 segment/selector register tokens
+; ====================================
+
+  %define x86SRegES (x86SReg + 0)
+  %define x86SRegCS (x86SReg + 1)
+  %define x86SRegSS (x86SReg + 2)
+  %define x86SRegDS (x86SReg + 3)
+  %define x86SRegFS (x86SReg + 4)
+  %define x86SRegGS (x86SReg + 5)
+
+; =========================
+; x86 8-bit register tokens
+; =========================
+
+  %define x86RegAL (x86Reg8 + 0)
+  %define x86RegCL (x86Reg8 + 1)
+  %define x86RegDL (x86Reg8 + 2)
+  %define x86RegBL (x86Reg8 + 3)
+  %define x86RegAH (x86Reg8 + 4)
+  %define x86RegCH (x86Reg8 + 5)
+  %define x86RegDH (x86Reg8 + 6)
+  %define x86RegBH (x86Reg8 + 7)
+
+; ==========================
+; x86 16-bit register tokens
+; ==========================
+
+  %define x86RegAX (x86Reg16 + 0)
+  %define x86RegCX (x86Reg16 + 1)
+  %define x86RegDX (x86Reg16 + 2)
+  %define x86RegBX (x86Reg16 + 3)
+  %define x86RegSP (x86Reg16 + 4)
+  %define x86RegBP (x86Reg16 + 5)
+  %define x86RegSI (x86Reg16 + 6)
+  %define x86RegDI (x86Reg16 + 7)
+
+; ==========================
+; x86 32-bit register tokens
+; ==========================
+
+  %define x86RegEAX (x86Reg32 + 0)
+  %define x86RegECX (x86Reg32 + 1)
+  %define x86RegEDX (x86Reg32 + 2)
+  %define x86RegEBX (x86Reg32 + 3)
+  %define x86RegESP (x86Reg32 + 4)
+  %define x86RegEBP (x86Reg32 + 5)
+  %define x86RegESI (x86Reg32 + 6)
+  %define x86RegEDI (x86Reg32 + 7)
 
 ; ==================================
 ; x86 assembler reserved word tokens
@@ -235,6 +275,7 @@
   ; Begin temporary definitions
   %define x86Call   (x86Ident + 0)
   %define x86Push   (x86Ident + 1)
+  %define lastX86Op x86Push
   ; End temporary definitions
 
   %define x86Cbw    (x86Ident +  0)
@@ -261,7 +302,6 @@
   %define x86Adc    (x86Ident + 20)
   %define x86Add    (x86Ident + 21)
   %define x86And    (x86Ident + 22)
-;  %define x86Call   (x86Ident + 23)
   %define x86Cmp    (x86Ident + 24)
   %define x86Dec    (x86Ident + 25)
   %define x86Div    (x86Ident + 26)
@@ -338,7 +378,6 @@
   %define x86Out    (x86Ident + 78)
   %define x86Pop    (x86Ident + 79)
 
-;  %define x86Push   (x86Ident + 80)
   %define x86Rcl    (x86Ident + 81)
   %define x86Rcr    (x86Ident + 82)
   %define x86Rol    (x86Ident + 83)
@@ -352,51 +391,3 @@
   %define x86Test   (x86Ident + 91)
   %define x86Xchg   (x86Ident + 92)
   %define x86Xor    (x86Ident + 93)
-
-; ====================================
-; x86 segment/selector register tokens
-; ====================================
-
-  %define x86SRegES (x86SReg + 0)
-  %define x86SRegCS (x86SReg + 1)
-  %define x86SRegSS (x86SReg + 2)
-  %define x86SRegDS (x86SReg + 3)
-
-; =========================
-; x86 8-bit register tokens
-; =========================
-
-  %define x86RegAL (x86Reg8 + 0)
-  %define x86RegCL (x86Reg8 + 1)
-  %define x86RegDL (x86Reg8 + 2)
-  %define x86RegBL (x86Reg8 + 3)
-  %define x86RegAH (x86Reg8 + 4)
-  %define x86RegCH (x86Reg8 + 5)
-  %define x86RegDH (x86Reg8 + 6)
-  %define x86RegBH (x86Reg8 + 7)
-
-; ==========================
-; x86 16-bit register tokens
-; ==========================
-
-  %define x86RegAX (x86Reg16 + 0)
-  %define x86RegCX (x86Reg16 + 1)
-  %define x86RegDX (x86Reg16 + 2)
-  %define x86RegBX (x86Reg16 + 3)
-  %define x86RegSP (x86Reg16 + 4)
-  %define x86RegBP (x86Reg16 + 5)
-  %define x86RegSI (x86Reg16 + 6)
-  %define x86RegDI (x86Reg16 + 7)
-
-; ==========================
-; x86 32-bit register tokens
-; ==========================
-
-  %define x86RegEAX (x86Reg32 + 0)
-  %define x86RegECX (x86Reg32 + 1)
-  %define x86RegEDX (x86Reg32 + 2)
-  %define x86RegEBX (x86Reg32 + 3)
-  %define x86RegESP (x86Reg32 + 4)
-  %define x86RegEBP (x86Reg32 + 5)
-  %define x86RegESI (x86Reg32 + 6)
-  %define x86RegEDI (x86Reg32 + 7)
