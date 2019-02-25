@@ -26,19 +26,19 @@
 ; ==================================================================
 ;                            Encode item
 ; ------------------------------------------------------------------
-; uint   param1, param2, param3, nextFormat
+; uint   operand1, operand2, operand3, nextFormat
 ; uint8  opcode1, opcode2, opcode3, modrm
 ; uint   emitFields
 ; uint8  xform1, xform2, xform3, xformOp
 ; uint32 rsvd
 ; ------------------------------------------------------------------
-;                     if paramXToken == token
-;              then paramXToken is compared directly
-;         else paramXToken is compared to the token group
+;                     if operandX == token
+;              then operandX is compared directly
+;         else operandX is compared to the token group
 ; ==================================================================
-  %define ENCODE86_PARAM1     0
-  %define ENCODE86_PARAM2     4
-  %define ENCODE86_PARAM3     8
+  %define ENCODE86_OPERAND1   0
+  %define ENCODE86_OPERAND2   4
+  %define ENCODE86_OPERAND3   8
   %define ENCODE86_NEXTFORMAT 12
   %define ENCODE86_OPCODE1    16
   %define ENCODE86_OPCODE2    17
@@ -215,16 +215,15 @@ x86GenOpMem:
   push    edi
 
   mov     ebx, [.op]
-  lea     edi, [.instruction]
 
   cmp     ebx, lastX86Op
   ja      .Exit
   mov     esi, [ebx * 8 + encode86Table + TOKEN86_ENCODE]
 
  .SearchInstruction:
-  cmp     dword [esi + ENCODE86_PARAM1], x86Mem
+  cmp     dword [esi + ENCODE86_OPERAND1], x86Mem
   jne     .NextInstruction
-  cmp     dword [esi + ENCODE86_PARAM2], 0
+  cmp     dword [esi + ENCODE86_OPERAND2], 0
   jne     .NextInstruction
   jmp     .FoundInstruction
  .NextInstruction:
@@ -237,7 +236,7 @@ x86GenOpMem:
  .FoundInstruction:
 
   mov     eax, [esi + ENCODE86_OPCODE1]
-  mov     [edi + INSTR_OPCODE1], eax
+  mov     [.instruction + INSTR_OPCODE1], eax
   mov     eax, [esi + ENCODE86_EMITFIELDS]
   mov     [.emitFields], eax
 
@@ -355,26 +354,30 @@ x86GenOpMem:
   jne     .NotEncodeDisp8
   mov     [.instruction + INSTR_DISP1], ecx
   or      dword [.emitFields], HAS_DISP1
-  jmp     .EmitInstruction
+  jmp     .XformInstruction
  .NotEncodeDisp8:
 
   cmp     edx, valInt16
   jne     .NotEncodeDisp16
   mov     [.instruction + INSTR_DISP1], ecx
   or      dword [.emitFields], (HAS_DISP1 | HAS_DISP2)
-  jmp     .EmitInstruction
+  jmp     .XformInstruction
  .NotEncodeDisp16:
 
   cmp     edx, valInt32
   jne     .NotEncodeDisp32
   mov     [.instruction + INSTR_DISP1], ecx
   or      dword [.emitFields], (HAS_DISP1 | HAS_DISP2 | HAS_DISP3 | HAS_DISP4)
-  jmp     .EmitInstruction
+  jmp     .XformInstruction
  .NotEncodeDisp32:
+
+ .XformInstruction:
+  ; TODO: Apply operand/operator transformations
 
  .EmitInstruction:
   push    dword [.handle]
-  push    edi
+  lea     eax, [.instruction]
+  push    eax
   push    dword [.emitFields]
   call    emit
   mov     [.result], eax
@@ -397,6 +400,12 @@ x86GenOpMem:
 ; =====================
 
 segment .data use32
+
+  addr16Prefix: db 0x67
+  addr16Field:  dd HAS_GROUP4_PREFIX
+
+  addr32Prefix: db 0
+  addr32Field:  dd 0
 
   x86Addr16Table:
     db 0b11_111_111 ;  0 - Invalid
