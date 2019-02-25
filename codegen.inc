@@ -196,10 +196,16 @@ x86GenOpMem:
   %define .result ebp - 4
   push    dword 0
 
-  %define .emitFields ebp - 8
+  %define .addrPrefix ebp - 8
   push    dword 0
 
-  %define .instruction ebp - (8 - INSTR_BUFFER_SIZE)
+  %define .addrField ebp - 12
+  push    dword 0
+
+  %define .emitFields ebp - 16
+  push    dword 0
+
+  %define .instruction ebp - (16 - INSTR_BUFFER_SIZE)
   times (INSTR_BUFFER_SIZE / 4) push dword 0
 
   push    ebx
@@ -249,6 +255,12 @@ x86GenOpMem:
   cmp     dword [.scale], 0
   jne     .Exit
 
+  ; Initiaqlize 16-bit prefix
+  mov     cl, [addr16Prefix]
+  mov     [.addrPrefix], cl
+  mov     ecx, [addr16Field]
+  mov     [.addrField], ecx
+
   ; Validate and initialize 16-bit base register
   cmp     eax, x86RegBX
   jne     .Addr16NotBX
@@ -292,7 +304,7 @@ x86GenOpMem:
   ; Special case: No base register, and no index register
   test    ebx, ebx
   jnz     .Addr16NotDispOnly
-  mov     edx, valUint16
+  mov     edx, valInt16
   mov     al, 0b00_000_110
   jmp     .EncodeInstruction
  .Addr16NotDispOnly:
@@ -322,6 +334,12 @@ x86GenOpMem:
   ; UNTESTED: Process a 32-bit address
   cmp     ecx, x86Reg32
   jne     .NotAddr32
+
+  ; Initiaqlize 32-bit prefix
+  mov     cl, [addr32Prefix]
+  mov     [.addrPrefix], cl
+  mov     ecx, [addr32Field]
+  mov     [.addrField], ecx
 
   ; TODO: Process 32-bit address
 
