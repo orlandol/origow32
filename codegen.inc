@@ -330,25 +330,113 @@ x86GenOpMem:
   jmp     .EncodeInstruction
  .NotAddr16:
 
+  ;;;
   ; UNTESTED: Process a 32-bit address
   cmp     ecx, x86Reg32
   jne     .NotAddr32
 
   ; Initiaqlize 32-bit prefix
-  mov     cl, [addr32Prefix]
-  mov     [.addrPrefix], cl
-  mov     ecx, [addr32Field]
-  mov     [.addrField], ecx
+  mov     bl, [addr32Prefix]
+  mov     [.addrPrefix], bl
+  mov     ebx, [addr32Field]
+  mov     [.addrField], ebx
 
-  ; TODO: Process 32-bit address
+  mov     ebx, edx
+  and     ebx, mask86Operand
 
+  mov     edi, [.scale]
+  and     eax, mask86SubOperand
+
+  ; Process index and scale
+  test    edx, edx
+  jz      .Addr32NoIndex
+
+  ; Index can't be register esp
+  cmp     edx, x86RegESP
+  je      .Exit
+  ; Index must be a 32-bit register
+  cmp     ebx, x86Reg32
+  jne     .Exit
+
+  and     edx, mask86SubOperand
+
+  ; Initialize the SIB and ModRM bytes
+  shl     dl, 3
+  or      dl, al
+  mov     ah, dl
+  mov     al, 0b00_000_100
+
+  ; Set Scale bytes in the SIB
+  cmp     edi, 1
+  je      .Addr32EncodeSIB
+  add     ah, 0b01_000_000
+  cmp     edi, 2
+  je      .Addr32EncodeSIB
+  add     ah, 0b01_000_000
+  cmp     edi, 4
+  je      .Addr32EncodeSIB
+  add     ah, 0b01_000_000
+  cmp     edi, 8
+  je      .Addr32EncodeSIB
+  jmp     .Exit
+
+ .Addr32EncodeSIB:
+  mov     [.instruction + INSTR_SIB], ah
+  or      dword [.emitFields], HAS_SIB
+  jmp     .Addr32DoneScale
+
+ .Addr32NoIndex:
+  test     edi, edi
+  jnz      .Exit
+
+ .Addr32DoneScale:
+
+  mov     ecx, [.displacement]
+  xor     edx, edx
+
+  ; TODO: Special case ebp
+
+  test    ecx, ecx
+  jnz     .Addr32SkipDisp0
+  jmp     .EncodeInstruction
+ .Addr32SkipDisp0:
+
+  mov     edx, valInt8
+  add     al, 0b01_000_000
+  cmp     ecx, -128
+  jle     .Addr32NotDisp8
+  cmp     ecx, 127
+  jge     .Addr32NotDisp8
+  add     al, 0b01_000_000
+  jmp     .EncodeInstruction
+ .Addr32NotDisp8:
+  mov     edx, valInt32
+  jmp     .EncodeInstruction
  .NotAddr32:
 
   ; TODO: Process displacement only address
+  cmp     dword [addr16Field], HAS_GROUP4_PREFIX
+  jne     .Not16BitDisp
+  mov     ecx, [.displacement]
+  mov     edx, valInt16
+  jmp     .EncodeInstruction
+ .Not16BitDisp:
+
+  cmp     dword [addr32Field], HAS_GROUP4_PREFIX
+  jne     .Not32BitDisp
+  mov     ecx, [.displacement]
+  mov     edx, valInt32
+  jmp     .EncodeInstruction
+ .Not32BitDisp:
 
   ; Prepare instruction buffer for emit
  .EncodeInstruction:
   or      [.instruction + INSTR_MODRM], al
+
+  mov     al, [.addrPrefix]
+  mov     [.instruction + INSTR_GROUP4_PREFIX], al
+  mov     eax, [.addrField]
+  or      [.emitFields], eax
 
   cmp     edx, valInt8
   jne     .NotEncodeDisp8
