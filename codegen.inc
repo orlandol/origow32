@@ -178,15 +178,16 @@ emit:
 segment .text use32
 
 ;
-; func bool x86GenOpMem( file handle, uint op, baseReg, indexReg, scale,
-;   int displacement, uint memSize )
+; func bool x86GenOpMem( file handle, uint op, segReg, baseReg,
+;   indexReg, scale, int displacement, uint memSize )
 ;
 x86GenOpMem:
   push    ebp
   mov     ebp, esp
 
-  %define .handle       ebp + 32
-  %define .op           ebp + 28
+  %define .handle       ebp + 36
+  %define .op           ebp + 32
+  %define .segReg       ebp + 28
   %define .baseReg      ebp + 24
   %define .indexReg     ebp + 20
   %define .scale        ebp + 16
@@ -335,7 +336,7 @@ x86GenOpMem:
   cmp     ecx, x86Reg32
   jne     .NotAddr32
 
-  ; Initiaqlize 32-bit prefix
+  ; Initialize 32-bit prefix
   mov     bl, [addr32Prefix]
   mov     [.addrPrefix], bl
   mov     ebx, [addr32Field]
@@ -348,8 +349,11 @@ x86GenOpMem:
   and     eax, mask86SubOperand
 
   ; Process index and scale
+  cmp     eax, x86RegESP
+  je      .Addr32ESPBase
   test    edx, edx
   jz      .Addr32NoIndex
+ .Addr32ESPBase:
 
   ; Index can't be register esp
   cmp     edx, x86RegESP
@@ -396,9 +400,15 @@ x86GenOpMem:
 
   ; TODO: Special case ebp
 
+  cmp     dword [.baseReg], x86RegEBP
+  je      .Addr32CheckDisp
   test    ecx, ecx
   jnz     .Addr32SkipDisp0
   jmp     .EncodeInstruction
+ .Addr32CheckDisp:
+  test    ecx, ecx
+  jnz     .Addr32SkipDisp0
+  mov     edx, valInt8
  .Addr32SkipDisp0:
 
   mov     edx, valInt8
@@ -414,7 +424,7 @@ x86GenOpMem:
   jmp     .EncodeInstruction
  .NotAddr32:
 
-  ; TODO: Process displacement only address
+  ; addr16Field != HAS_GROUP4_PREFIX when the target CPU mode is 16-bits
   cmp     dword [addr16Field], HAS_GROUP4_PREFIX
   jne     .Not16BitDisp
   mov     ecx, [.displacement]
@@ -422,6 +432,7 @@ x86GenOpMem:
   jmp     .EncodeInstruction
  .Not16BitDisp:
 
+  ; addr32ield != HAS_GROUP4_PREFIX when the target CPU mode is 32-bits
   cmp     dword [addr32Field], HAS_GROUP4_PREFIX
   jne     .Not32BitDisp
   mov     ecx, [.displacement]
@@ -481,7 +492,7 @@ x86GenOpMem:
 
   mov     esp, ebp
   pop     ebp
-  ret 28
+  ret 32
 
 ; =====================
 ; Code generator tables
