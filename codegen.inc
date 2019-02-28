@@ -443,6 +443,17 @@ x86GenOpMem:
  .EncodeInstruction:
   or      [.instruction + INSTR_MODRM], al
 
+  mov     ebx, [.segReg]
+  test    ebx, ebx
+  jz      .EncodeSkipSeg
+  and     ebx, mask86SubOperand
+  cmp     ebx, (lastX86SReg & mask86SubOperand)
+  ja      .Exit
+  mov     al, [ebx + x86SegPrefixes]
+  mov     [.instruction + INSTR_GROUP2_PREFIX], al
+
+ .EncodeSkipSeg:
+
   mov     al, [.addrPrefix]
   mov     [.instruction + INSTR_GROUP4_PREFIX], al
   mov     eax, [.addrField]
@@ -546,5 +557,7 @@ segment .data use32
     db 0, 0, 0, 0
     dd 0
   encode86TableEnd:
+
+  x86SegPrefixes: db 0x26, 0x2E, 0x36, 0x3E, 0x64, 0x65, 0, 0
 
 %endif

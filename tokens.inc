@@ -228,6 +228,7 @@
   %define x86SRegDS (x86SReg + 3)
   %define x86SRegFS (x86SReg + 4)
   %define x86SRegGS (x86SReg + 5)
+  %define lastX86SReg x86SRegGS
 
 ; =========================
 ; x86 8-bit register tokens
