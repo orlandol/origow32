@@ -346,13 +346,15 @@ x86GenOpMem:
   and     ebx, mask86Operand
 
   mov     edi, [.scale]
+
   and     eax, mask86SubOperand
+  mov     ah, 0b00_100_000
 
   ; Process index and scale
-  cmp     eax, x86RegESP
+  cmp     dword [.baseReg], x86RegESP
   je      .Addr32ESPBase
   test    edx, edx
-  jz      .Addr32NoIndex
+  jz      .Addr32SkipIndex
  .Addr32ESPBase:
 
   ; Index can't be register esp
@@ -362,13 +364,14 @@ x86GenOpMem:
   cmp     ebx, x86Reg32
   jne     .Exit
 
-  and     edx, mask86SubOperand
-
   ; Initialize the SIB and ModRM bytes
+  and     edx, mask86SubOperand
+  and     ah, 0b11_000_111
   shl     dl, 3
   or      dl, al
   mov     ah, dl
   mov     al, 0b00_000_100
+ .Addr32SkipIndex:
 
   ; Set Scale bytes in the SIB
   cmp     edi, 1
@@ -388,10 +391,6 @@ x86GenOpMem:
   mov     [.instruction + INSTR_SIB], ah
   or      dword [.emitFields], HAS_SIB
   jmp     .Addr32DoneScale
-
- .Addr32NoIndex:
-  test     edi, edi
-  jnz      .Exit
 
  .Addr32DoneScale:
 
