@@ -397,8 +397,6 @@ x86GenOpMem:
   mov     ecx, [.displacement]
   xor     edx, edx
 
-  ; TODO: Special case ebp
-
   cmp     dword [.baseReg], x86RegEBP
   je      .Addr32CheckDisp
   test    ecx, ecx
