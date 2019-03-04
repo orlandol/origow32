@@ -15,11 +15,11 @@ run:
 
   call    InitRTL
 
-  push    fileHandle
+  push    fileName
   call    fcreate
   mov     [fileHandle], eax
   test    eax, eax
-  jz      .fcreateSucceeded
+  jnz     .fcreateSucceeded
   push    fcreateFailed
   call    echostring
   push    eoln
