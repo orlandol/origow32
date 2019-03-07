@@ -314,6 +314,17 @@ x86GenOpMem:
 ;   segReg, baseReg, indexReg, scale, int displacement )
 ;
 x86EncodeAddr32:
+  ; 1) If not (baseReg | indexReg), modify modRM as standalone
+  ;       displacement, then go transform operand
+  ; 2) Init SIB with no index, and no base
+  ; 3) If baseReg, modify modRM
+  ; 4) If baseReg is ESP, or indexReg, modify SIB and modRM
+  ; 5) If indexReg is ESP, return false
+  ; 6) If indexReg, set scale
+  ; 7) If displacement, or baseReg is EBP, modify modRM
+  ; 8) Transform operand(?)
+  ; 9) Encode operand
+
   push    ebp
   mov     ebp, esp
 
