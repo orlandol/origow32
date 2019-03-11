@@ -1,5 +1,5 @@
 
 USE32
 
-  mov edi, [esp]
-  db 0b1000_1011, 0b00_111_100, 0b01_000_010
+  call [ds:edi]
+  call [ds:edi + ebp]

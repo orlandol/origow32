@@ -1,6 +1,7 @@
 %ifndef INC_CODEGEN
 %define INC_CODEGEN
 
+  %include "debug.inc"
   %include "tokens.inc"
 
 ; ====================================
@@ -209,7 +210,7 @@ x86GenOpMem:
   %define .emitFields ebp - 16
   push    dword 0
 
-  %define .instruction ebp - (16 - INSTR_BUFFER_SIZE)
+  %define .instruction ebp - (16 + INSTR_BUFFER_SIZE)
   times (INSTR_BUFFER_SIZE / 4) push dword 0
 
   push    ebx
@@ -246,15 +247,20 @@ x86GenOpMem:
   mov     eax, [esi + ENCODE86_EMITFIELDS]
   mov     [.emitFields], eax
 
-  mov     eax, [.baseReg]
-  and     eax, maskGroup
+  ;mov     eax, [.baseReg]
+  ;and     eax, mask86Operand
 
-  cmp     eax, x86Reg32
-  jne     .NotReg32
+  ;cmp     eax, x86Reg32
+  ;jne     .NotReg32
+  cmp     dword [cpuBits], 32
+  jne     .NotAddr32
   lea     eax, [.instruction]
   push    eax
   lea     eax, [.emitFields]
   push    eax
+  xor     eax, eax
+  mov     al, [esi + ENCODE86_XFORM1]
+  push    dword eax
   push    dword [.segReg]
   push    dword [.baseReg]
   push    dword [.indexReg]
@@ -264,16 +270,21 @@ x86GenOpMem:
   test    eax, eax
   jz      .Exit
   jmp     .TransformInstruction
- .NotReg32:
+ .NotAddr32:
 
-  cmp     eax, x86Reg16
-  jne     .NotReg16
+  ;cmp     eax, x86Reg16
+  ;jne     .NotReg16
+  cmp     dword [cpuBits], 16
+  jne     .NotAddr16
   cmp     dword [.scale], 0
   jne     .Exit
   lea     eax, [.instruction]
   push    eax
   lea     eax, [.emitFields]
   push    eax
+  xor     eax, eax
+  mov     al, [esi + ENCODE86_XFORM1]
+  push    dword eax
   push    dword [.segReg]
   push    dword [.baseReg]
   push    dword [.indexReg]
@@ -282,7 +293,9 @@ x86GenOpMem:
   test    eax, eax
   jz      .Exit
   jmp     .TransformInstruction
- .NotReg16:
+ .NotAddr16:
+
+  jmp     .Exit
 
  .EncodeInstruction:
 
@@ -311,25 +324,15 @@ x86GenOpMem:
 
 ;
 ; func bool x86EncodeAddr32( Instruction instruction, uint emitFields,
-;   segReg, baseReg, indexReg, scale, int displacement )
+;   xform, segReg, baseReg, indexReg, scale, int displacement )
 ;
 x86EncodeAddr32:
-  ; 1) If not (baseReg | indexReg), modify modRM as standalone
-  ;       displacement, then go transform operand
-  ; 2) Init SIB with no index, and no base
-  ; 3) If baseReg, modify modRM
-  ; 4) If baseReg is ESP, or indexReg, modify SIB and modRM
-  ; 5) If indexReg is ESP, return false
-  ; 6) If indexReg, set scale
-  ; 7) If displacement, or baseReg is EBP, modify modRM
-  ; 8) Transform operand(?)
-  ; 9) Encode operand
-
   push    ebp
   mov     ebp, esp
 
-  %define .instruction  ebp + 32
-  %define .emitFields   ebp + 28
+  %define .instruction  ebp + 36
+  %define .emitFields   ebp + 32
+  %define .xform        ebp + 28
   %define .segReg       ebp + 24
   %define .baseReg      ebp + 20
   %define .indexReg     ebp + 16
@@ -339,23 +342,188 @@ x86EncodeAddr32:
   %define .result ebp - 4
   push    dword 0
 
+  mov     ecx, [.baseReg]
+  mov     ebx, ecx
+  mov     edx, [.indexReg]
+  mov     esi, [.instruction]
+  mov     edi, [.emitFields]
+  test    esi, esi
+  jz      .Exit
+  test    edi, edi
+  jz      .Exit
+
+  ; Special case: Displacement only
+  or      ecx, edx
+  jnz     .NotDispOnly
+  or      dword [esi + INSTR_MODRM], 0b00_000_101
+  mov     eax, [.displacement]
+  mov     [esi + INSTR_DISP1], eax
+  or      dword [edi], \
+    (HAS_DISP1 | HAS_DISP2 | HAS_DISP3 | HAS_DISP4 | HAS_MODRM)
+  jmp     .EncodeSegReg
+ .NotDispOnly:
+
+  ; Init ModRM from instruction buffer
+  mov     al, [esi + INSTR_MODRM]
+  ; Init SIB to no index and no base
+  mov     ah, 0b00_100_101
+
+  ; If baseReg, modify ModRM
+  test    ebx, ebx
+  jz      .NoBaseReg
+  mov     ecx, ebx
+  and     ebx, mask86SubOperand
+  and     ecx, mask86Operand
+  cmp     ecx, x86Reg32
+  jne     .Exit
+  or      al, bl
+  mov     [esi + INSTR_MODRM], al
+  or      dword [edi], HAS_MODRM
+  mov     ebx, [.baseReg]
+ .NoBaseReg:
+
+  ; If baseReg is ESP, or indexReg is specified, modify ModRM and SIB
+  cmp     ebx, x86RegESP
+  je      .EncodeSIB
+  test    edx, edx
+  jnz     .EncodeSIB
+  jmp     .NotSIB
+ .EncodeSIB:
+  mov     bl, al
+  and     al, 0b11_111_000
+  or      al, 0b00_00_100
+  and     bl, 0b00_00_111
+  and     ah, 0b11_111_000
+  or      ah, bl
+  mov     [edi + INSTR_MODRM], al
+  mov     [edi + INSTR_SIB], ah
+  or      dword [edi], (HAS_MODRM | HAS_SIB)
+ .NotSIB:
+
+  ; If indexReg is ESP, return false
+  cmp     edx, x86RegESP
+  je      .Exit
+
+  ; If indexReg, set index and scale
+  test    edx, edx
+  jz      .NoIndexReg
+  mov     ebx, edx
+  and     edx, mask86SubOperand
+  and     ebx, mask86Operand
+  cmp     ebx, x86Reg32
+  jne     .Exit
+  ; ...index
+  and     ah, 0b11_000_111
+  shl     dl, 3
+  or      ah, dl
+  mov     ebx, [.scale]
+  ; ...scale
+  cmp     ebx, 1
+  jbe     .DoneScale
+  add     ah, 0b01_000_000
+  cmp     ebx, 2
+  je      .DoneScale
+  add     ah, 0b01_000_000
+  cmp     ebx, 4
+  je      .DoneScale
+  add     ah, 0b01_000_000
+  cmp     ebx, 8
+  je      .DoneScale
+  jmp     .Exit
+ .DoneScale:
+  mov     [esi + INSTR_MODRM], al
+  mov     [esi + INSTR_SIB], ah
+  or      dword [edi], (HAS_MODRM | HAS_SIB)
+ .NoIndexReg:
+
+  ; If displacement, or baseReg is EBP, modify ModRM
+  mov     ebx, [.displacement]
+  cmp     dword [.baseReg], x86RegEBP
+  je      .EncodeDisp
+  ;cmp     dword [.indexReg], x86RegEBP?
+  ;je      .EncodeDisp?
+  test     ebx, ebx
+  jz       .DoneDisp
+ .EncodeDisp:
+  mov      [edi + INSTR_DISP1], ebx
+  add      al, 0b01_000_000
+  cmp      ebx, -128
+  jl       .NotDisp8
+  cmp      ebx, 127
+  jg       .NotDisp8
+  add      al, 0b01_000_000
+  or       dword [esi], HAS_DISP1
+  jmp      .DoneDisp
+ .NotDisp8:
+  or       dword [esi], (HAS_DISP1 | HAS_DISP2 | HAS_DISP3 | HAS_DISP4)
+ .DoneDisp:
+
+  ; Transform operand
+
+ .EncodeSegReg:
+  ; Encode segReg, and skip assumed segment registers
+  mov     ecx, [.segReg]
+  mov     ebx, [.baseReg]
+  mov     edx, [.indexReg]
+  ; ...DS is not the default for registers esp, and ebp
+  cmp     ecx, x86SRegDS
+  jne     .SkipSegDS
+  cmp     ebx, x86RegEBP
+  je      .EncodeSeg
+  cmp     ebx, x86RegESP
+  je      .EncodeSeg
+  jmp     .EncodeSeg
+ .SkipSegDS:
+  ; ...SS is the default for registers esp, and ebp
+  cmp     ecx, x86SRegSS
+  jne     .SkipSegSS
+  cmp     ebx, x86RegEBP
+  jne     .SkipSegReg
+  cmp     ebx, x86RegESP
+  jne     .SkipSegReg
+  jmp     .EncodeSeg
+ .SkipSegSS:
+  ; ...Encode segment override by default
+ .EncodeSeg:
+  mov     ebx, ecx
+  and     ecx, mask86Operand
+  and     ebx, mask86SubOperand
+  cmp     ecx, x86SReg
+  jne     .SkipSegReg
+  mov     al, [ebx + x86SegPrefixes]
+  mov     [edi + INSTR_GROUP2_PREFIX], al
+  or      dword [esi], HAS_GROUP2_PREFIX
+ .SkipSegReg:
+
+  ; Encode address size prefix
+  mov     al, [addr32Prefix]
+  test    al, al
+  jz      .SkipPrefix
+  mov     [edi + INSTR_GROUP3_PREFIX], al
+  mov     eax, [addr32Field]
+  or      [esi], eax
+ .SkipPrefix:
+
+  mov     dword [.result], 1
+
  .Exit:
   mov     eax, [.result]
 
   mov     esp, ebp
   pop     ebp
-  ret 28
+  ret 32
 
 ;
 ; func bool x86EncodeAddr16( Instruction instruction, uint emitFields,
-;   segReg, baseReg, indexReg, int displacement )
+;   xform, segReg, baseReg, indexReg, int displacement )
 ;
 x86EncodeAddr16:
   push    ebp
   mov     ebp, esp
 
-  %define .instruction  ebp + 28
-  %define .emitFields   ebp + 24
+  %define .instruction  ebp + 32
+  %define .emitFields   ebp + 28
+  %define .xform        ebp + 24
   %define .segReg       ebp + 20
   %define .baseReg      ebp + 16
   %define .indexReg     ebp + 12
@@ -369,7 +537,7 @@ x86EncodeAddr16:
 
   mov     esp, ebp
   pop     ebp
-  ret 24
+  ret 28
 
 ; =====================
 ; Code generator tables
@@ -378,6 +546,12 @@ x86EncodeAddr16:
 segment .data use32
 
   cpuBits: dd 32
+
+  addr16Prefix: db 0x67
+  addr16Field:  dd HAS_GROUP4_PREFIX
+
+  addr32Prefix: db 0
+  addr32Field:  dd 0
 
   x86Addr16Table:
     db 0b11_111_111 ;  0 - Invalid
