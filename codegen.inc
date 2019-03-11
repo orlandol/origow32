@@ -360,7 +360,7 @@ x86EncodeAddr32:
   mov     [esi + INSTR_DISP1], eax
   or      dword [edi], \
     (HAS_DISP1 | HAS_DISP2 | HAS_DISP3 | HAS_DISP4 | HAS_MODRM)
-  jmp     .EncodeSegReg
+  jmp     .EncodeSeg
  .NotDispOnly:
 
   ; Init ModRM from instruction buffer
@@ -440,8 +440,6 @@ x86EncodeAddr32:
   mov     ebx, [.displacement]
   cmp     dword [.baseReg], x86RegEBP
   je      .EncodeDisp
-  ;cmp     dword [.indexReg], x86RegEBP?
-  ;je      .EncodeDisp?
   test     ebx, ebx
   jz       .DoneDisp
  .EncodeDisp:
@@ -460,40 +458,18 @@ x86EncodeAddr32:
 
   ; Transform operand
 
- .EncodeSegReg:
+ .EncodeSeg:
   ; Encode segReg, and skip assumed segment registers
   mov     ecx, [.segReg]
-  mov     ebx, [.baseReg]
-  mov     edx, [.indexReg]
-  ; ...DS is not the default for registers esp, and ebp
-  cmp     ecx, x86SRegDS
-  jne     .SkipSegDS
-  cmp     ebx, x86RegEBP
-  je      .EncodeSeg
-  cmp     ebx, x86RegESP
-  je      .EncodeSeg
-  jmp     .EncodeSeg
- .SkipSegDS:
-  ; ...SS is the default for registers esp, and ebp
-  cmp     ecx, x86SRegSS
-  jne     .SkipSegSS
-  cmp     ebx, x86RegEBP
-  jne     .SkipSegReg
-  cmp     ebx, x86RegESP
-  jne     .SkipSegReg
-  jmp     .EncodeSeg
- .SkipSegSS:
-  ; ...Encode segment override by default
- .EncodeSeg:
   mov     ebx, ecx
   and     ecx, mask86Operand
   and     ebx, mask86SubOperand
   cmp     ecx, x86SReg
-  jne     .SkipSegReg
+  jne     .SkipSeg
   mov     al, [ebx + x86SegPrefixes]
   mov     [edi + INSTR_GROUP2_PREFIX], al
   or      dword [esi], HAS_GROUP2_PREFIX
- .SkipSegReg:
+ .SkipSeg:
 
   ; Encode address size prefix
   mov     al, [addr32Prefix]

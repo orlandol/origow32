@@ -38,7 +38,7 @@ run:
   jz      .DoneDisplacement
   push    dword [fileHandle]
   push    dword x86Call
-  push    dword x86SRegSS
+  push    dword x86SRegGS
   push    dword 0
   push    dword 0
   push    dword 0
@@ -63,18 +63,18 @@ run:
 
   ; Test ESP as index with/without scale values
   xor     esi, esi
-  mov     ecx, 4
+  mov     ecx, 5
  .espIndexTest:
   test    ecx, ecx
   jz      .espIndexDone
   push    dword [fileHandle]
   push    dword x86Call
   push    dword 0
+  push    dword 0
   push    dword x86RegESP
   mov     eax, [esi + indexScale]
   add     esi, 4
   push    dword eax
-  push    dword 0
   push    dword 0
   push    dword 0
   call    x86GenOpMem
@@ -141,7 +141,6 @@ segment .data use32
     dd x86RegECX
     dd x86RegEDX
     dd x86RegEBX
-    dd x86RegESP
     dd x86RegEBP
     dd x86RegESI
     dd x86RegEDI
