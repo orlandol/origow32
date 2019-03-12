@@ -345,26 +345,26 @@ x86EncodeAddr32:
   mov     ecx, [.baseReg]
   mov     ebx, ecx
   mov     edx, [.indexReg]
-  mov     esi, [.instruction]
-  mov     edi, [.emitFields]
-  test    esi, esi
-  jz      .Exit
+  mov     edi, [.instruction]
+  mov     esi, [.emitFields]
   test    edi, edi
+  jz      .Exit
+  test    esi, esi
   jz      .Exit
 
   ; Special case: Displacement only
   or      ecx, edx
   jnz     .NotDispOnly
-  or      dword [esi + INSTR_MODRM], 0b00_000_101
+  or      dword [edi + INSTR_MODRM], 0b00_000_101
   mov     eax, [.displacement]
-  mov     [esi + INSTR_DISP1], eax
-  or      dword [edi], \
+  mov     [edi + INSTR_DISP1], eax
+  or      dword [esi], \
     (HAS_DISP1 | HAS_DISP2 | HAS_DISP3 | HAS_DISP4 | HAS_MODRM)
   jmp     .EncodeSeg
  .NotDispOnly:
 
   ; Init ModRM from instruction buffer
-  mov     al, [esi + INSTR_MODRM]
+  mov     al, [edi + INSTR_MODRM]
   ; Init SIB to no index and no base
   mov     ah, 0b00_100_101
 
@@ -377,8 +377,8 @@ x86EncodeAddr32:
   cmp     ecx, x86Reg32
   jne     .Exit
   or      al, bl
-  mov     [esi + INSTR_MODRM], al
-  or      dword [edi], HAS_MODRM
+  mov     [edi + INSTR_MODRM], al
+  or      dword [esi], HAS_MODRM
   mov     ebx, [.baseReg]
  .NoBaseReg:
 
@@ -397,7 +397,7 @@ x86EncodeAddr32:
   or      ah, bl
   mov     [edi + INSTR_MODRM], al
   mov     [edi + INSTR_SIB], ah
-  or      dword [edi], (HAS_MODRM | HAS_SIB)
+  or      dword [esi], (HAS_MODRM | HAS_SIB)
  .NotSIB:
 
   ; If indexReg is ESP, return false
@@ -431,27 +431,27 @@ x86EncodeAddr32:
   je      .DoneScale
   jmp     .Exit
  .DoneScale:
-  mov     [esi + INSTR_MODRM], al
-  mov     [esi + INSTR_SIB], ah
-  or      dword [edi], (HAS_MODRM | HAS_SIB)
+  mov     [edi + INSTR_MODRM], al
+  mov     [edi + INSTR_SIB], ah
+  or      dword [esi], (HAS_MODRM | HAS_SIB)
  .NoIndexReg:
 
   ; If displacement, or baseReg is EBP, modify ModRM
   mov     ebx, [.displacement]
   cmp     dword [.baseReg], x86RegEBP
   je      .EncodeDisp
-  test     ebx, ebx
-  jz       .DoneDisp
+  test    ebx, ebx
+  jz      .DoneDisp
  .EncodeDisp:
-  mov      [edi + INSTR_DISP1], ebx
-  add      al, 0b01_000_000
-  cmp      ebx, -128
-  jl       .NotDisp8
-  cmp      ebx, 127
-  jg       .NotDisp8
-  add      al, 0b01_000_000
-  or       dword [esi], HAS_DISP1
-  jmp      .DoneDisp
+  mov     [edi + INSTR_DISP1], ebx
+  add     al, 0b01_000_000
+  cmp     ebx, -128
+  jl      .NotDisp8
+  cmp     ebx, 127
+  jg      .NotDisp8
+  add     al, 0b01_000_000
+  or      dword [esi], HAS_DISP1
+  jmp     .DoneDisp
  .NotDisp8:
   or       dword [esi], (HAS_DISP1 | HAS_DISP2 | HAS_DISP3 | HAS_DISP4)
  .DoneDisp:
