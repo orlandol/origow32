@@ -92,6 +92,28 @@ run:
   call    [ExitProcess]
  .espIndexDone:
 
+  ; Test scale without an index register
+  push    dword [fileHandle]
+  push    dword x86Call
+  push    dword 0
+  push    dword 0
+  push    dword 0
+  push    dword 4
+  push    dword 0
+  push    dword 0
+  call    x86GenOpMem
+  inc     edx
+  test    eax, eax
+  jz      .ScaleOnlyFailed
+  push    testFailed
+  call    echostring
+  push    eoln
+  call    echostring
+  push    edx
+  call    [ExitProcess]
+ .ScaleOnlyFailed:
+
+  ; All tests passed
   push    testsPassed
   call    echostring
   push    eoln

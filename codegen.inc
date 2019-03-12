@@ -404,9 +404,10 @@ x86EncodeAddr32:
   cmp     edx, x86RegESP
   je      .Exit
 
+  ; Bug: x86Encode32 succeeds if scale is specified without an index register
   ; If indexReg, set index and scale
   test    edx, edx
-  jz      .NoIndexReg
+  jz      .CheckScale
   mov     ebx, edx
   and     edx, mask86SubOperand
   and     ebx, mask86Operand
@@ -430,6 +431,11 @@ x86EncodeAddr32:
   cmp     ebx, 8
   je      .DoneScale
   jmp     .Exit
+ .CheckScale:
+call dump
+  cmp     dword [.scale], 0
+  ja      .Exit
+  jmp     .NoIndexReg
  .DoneScale:
   mov     [edi + INSTR_MODRM], al
   mov     [edi + INSTR_SIB], ah
@@ -454,12 +460,14 @@ x86EncodeAddr32:
   jmp     .DoneDisp
  .NotDisp8:
   or       dword [esi], (HAS_DISP1 | HAS_DISP2 | HAS_DISP3 | HAS_DISP4)
+  jmp      .TransformOperand
  .DoneDisp:
 
-  ; Transform operand
+ ; Transform operand
+ .TransformOperand:
 
+ ; Encode segReg, and skip assumed segment registers
  .EncodeSeg:
-  ; Encode segReg, and skip assumed segment registers
   mov     ecx, [.segReg]
   mov     ebx, ecx
   and     ecx, mask86Operand
