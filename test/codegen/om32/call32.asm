@@ -8,6 +8,8 @@ segment .text use32
   %include "rtl.inc"
   %include "codegen.inc"
 
+  %define x86Mnemonic x86Call
+
 run:
 ..start:
   push    ebp
@@ -28,6 +30,7 @@ run:
   call    [ExitProcess]
  .fcreateSucceeded:
 
+  ; Set first error number to 1
   mov     edx, 1
 
   ; Test standalone displacement generation
@@ -37,7 +40,7 @@ run:
   test    ecx, ecx
   jz      .DoneDisplacement
   push    dword [fileHandle]
-  push    dword x86Call
+  push    dword x86Mnemonic
   push    dword x86SRegGS
   push    dword 0
   push    dword 0
@@ -68,7 +71,7 @@ run:
   test    ecx, ecx
   jz      .espIndexDone
   push    dword [fileHandle]
-  push    dword x86Call
+  push    dword x86Mnemonic
   push    dword 0
   push    dword 0
   push    dword x86RegESP
@@ -94,7 +97,7 @@ run:
 
   ; Test scale without an index register
   push    dword [fileHandle]
-  push    dword x86Call
+  push    dword x86Mnemonic
   push    dword 0
   push    dword 0
   push    dword 0

@@ -355,6 +355,8 @@ x86EncodeAddr32:
   ; Special case: Displacement only
   or      ecx, edx
   jnz     .NotDispOnly
+  cmp     dword [.scale], 0
+  ja      .Exit
   or      dword [edi + INSTR_MODRM], 0b00_000_101
   mov     eax, [.displacement]
   mov     [edi + INSTR_DISP1], eax
@@ -432,7 +434,7 @@ x86EncodeAddr32:
   je      .DoneScale
   jmp     .Exit
  .CheckScale:
-call dump
+
   cmp     dword [.scale], 0
   ja      .Exit
   jmp     .NoIndexReg
