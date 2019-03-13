@@ -30,91 +30,7 @@ run:
   call    [ExitProcess]
  .fcreateSucceeded:
 
-  ; Set first error number to 1
-  mov     edx, 1
-
-  ; Test standalone displacement generation
-  xor     esi, esi
-  mov     ecx, 4
- .DisplacementTest:
-  test    ecx, ecx
-  jz      .DoneDisplacement
-  push    dword [fileHandle]
-  push    dword x86Mnemonic
-  push    dword x86SRegGS
-  push    dword 0
-  push    dword 0
-  push    dword 0
-  mov     eax, [esi + displacementValue]
-  add     esi, 4
-  push    dword eax
-  push    dword 0
-  call    x86GenOpMem
-  test    eax, eax
-  jz      .DisplacementError
-  inc     edx
-  dec     ecx
-  jmp     .DisplacementTest
- .DisplacementError:
-  push    testFailed
-  call    echostring
-  push    eoln
-  call    echostring
-  push    edx
-  call    [ExitProcess]
- .DoneDisplacement:
-
-  ; Test ESP as index with/without scale values
-  xor     esi, esi
-  mov     ecx, 5
- .espIndexTest:
-  test    ecx, ecx
-  jz      .espIndexDone
-  push    dword [fileHandle]
-  push    dword x86Mnemonic
-  push    dword 0
-  push    dword 0
-  push    dword x86RegESP
-  mov     eax, [esi + indexScale]
-  add     esi, 4
-  push    dword eax
-  push    dword 0
-  push    dword 0
-  call    x86GenOpMem
-  test    eax, eax
-  jnz     .espIndexError
-  inc     edx
-  dec     ecx
-  jmp     .espIndexTest
- .espIndexError:
-  push    testFailed
-  call    echostring
-  push    eoln
-  call    echostring
-  push    edx
-  call    [ExitProcess]
- .espIndexDone:
-
-  ; Test scale without an index register
-  push    dword [fileHandle]
-  push    dword x86Mnemonic
-  push    dword 0
-  push    dword 0
-  push    dword 0
-  push    dword 4
-  push    dword 0
-  push    dword 0
-  call    x86GenOpMem
-  inc     edx
-  test    eax, eax
-  jz      .ScaleOnlyFailed
-  push    testFailed
-  call    echostring
-  push    eoln
-  call    echostring
-  push    edx
-  call    [ExitProcess]
- .ScaleOnlyFailed:
+  ; TODO: Write single test loop to iterate through test data
 
   ; All tests passed
   push    testsPassed
@@ -139,48 +55,11 @@ segment .data use32
   declstring fcreateFailed, "Error creating file call32.cg"
 
   declstring testFailed, "Test FAILED"
+  declstring shouldFail, "Test SHOULD HAVE FAILED"
   declstring testsPassed, "Tests passed"
 
   fileHandle: dd 0
 
-  segRegister:
-    dd x86SRegES
-    dd x86SRegCS
-    dd x86SRegSS
-    dd x86SRegDS
-    dd x86SRegFS
-    dd x86SRegGS
-
-  baseRegister:
-    dd x86RegEAX
-    dd x86RegECX
-    dd x86RegEDX
-    dd x86RegEBX
-    dd x86RegESP
-    dd x86RegEBP
-    dd x86RegESI
-    dd x86RegEDI
-
-  indexRegister:
-    dd x86RegEAX
-    dd x86RegECX
-    dd x86RegEDX
-    dd x86RegEBX
-    dd x86RegEBP
-    dd x86RegESI
-    dd x86RegEDI
-
-  indexScale:
-    dd 0
-    dd 1
-    dd 2
-    dd 4
-    dd 8
-
-  displacementValue:
-    dd 0
-    dd 0x12
-    dd 0x1234
-    dd 0x12345678
+  ; TODO: Create array of parameter, result, exit codes, and error strings
 
 section .bss use32

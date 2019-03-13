@@ -220,6 +220,8 @@ x86GenOpMem:
   push    edi
 
   mov     ebx, [.op]
+  test    ebx, ebx
+  jz      .Exit
   cmp     ebx, lastX86Op
   ja      .Exit
   and     ebx, maskSubtoken
