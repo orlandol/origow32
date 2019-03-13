@@ -40,6 +40,48 @@ run:
   call    [ExitProcess]
  .fcreateSucceeded:
 
+  ; Test for opcode zero
+  push    dword [fileHandle]
+  push    dword 0
+  push    dword 0
+  push    dword 0
+  push    dword 0
+  push    dword 0
+  push    dword 0
+  push    dword 0
+  call    x86GenOpMem
+  ; ...Check result
+  cmp     eax, 0
+  je      .ZeroOpSucceeded
+  push    shouldFail
+  call    echostring
+  push    eoln
+  call    echostring
+  push    dword 1
+  call    [ExitProcess]
+ .ZeroOpSucceeded:
+
+  ; Test for invalid opcode
+  push    dword [fileHandle]
+  push    dword (lastX86Op + 1)
+  push    dword 0
+  push    dword 0
+  push    dword 0
+  push    dword 0
+  push    dword 0
+  push    dword 0
+  call    x86GenOpMem
+  ; ...Check result
+  cmp     eax, 0
+  je      .InvalidOpSucceeded
+  push    shouldFail
+  call    echostring
+  push    eoln
+  call    echostring
+  push    dword 2
+  call    [ExitProcess]
+ .InvalidOpSucceeded:
+
   ; Run each test, using test data
   mov     esi, testParameters
  .TestLoop:
@@ -54,7 +96,7 @@ run:
   push    dword [esi + TPARAM_DISP]
   push    dword [esi + TPARAM_MEMSIZE]
   call    x86GenOpMem
-
+  ; ...Check result
   cmp     eax, dword [esi + TPARAM_RESULT]
   je      .Succeeded
   push    dword [esi + TPARAM_ERRSTR]
@@ -97,6 +139,46 @@ segment .data use32
   fileHandle: dd 0
 
   testParameters:
+    ; call [0]
+    dd 0
+    dd 0
+    dd 0
+    dd 0
+    dd 0
+    dd 0
+    dd 1
+    dd testFailed
+    dd 3
+    ; call [0x12]
+    dd 0
+    dd 0
+    dd 0
+    dd 0
+    dd 0x12
+    dd 0
+    dd 1
+    dd testFailed
+    dd 4
+    ; call [0x1234]
+    dd 0
+    dd 0
+    dd 0
+    dd 0
+    dd 0x1234
+    dd 0
+    dd 1
+    dd testFailed
+    dd 5
+    ; call [0x12345678]
+    dd 0
+    dd 0
+    dd 0
+    dd 0
+    dd 0x12345678
+    dd 0
+    dd 1
+    dd testFailed
+    dd 6
     ; call [gs:0]
     dd x86SRegGS
     dd 0
@@ -106,7 +188,7 @@ segment .data use32
     dd 0
     dd 1
     dd testFailed
-    dd 1
+    dd 7
     ; call [gs:0x12]
     dd x86SRegGS
     dd 0
@@ -116,7 +198,7 @@ segment .data use32
     dd 0
     dd 1
     dd testFailed
-    dd 2
+    dd 8
     ; call [gs:0x1234]
     dd x86SRegGS
     dd 0
@@ -126,7 +208,7 @@ segment .data use32
     dd 0
     dd 1
     dd testFailed
-    dd 3
+    dd 9
     ; call [gs:0x12345678]
     dd x86SRegGS
     dd 0
@@ -136,7 +218,7 @@ segment .data use32
     dd 0
     dd 1
     dd testFailed
-    dd 4
+    dd 10
     ; [* 4]
     dd 0
     dd 0
@@ -146,7 +228,7 @@ segment .data use32
     dd 0
     dd 0
     dd shouldFail
-    dd 5
+    dd 11
   testParametersEnd:
 
 section .bss use32
