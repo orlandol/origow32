@@ -386,13 +386,20 @@ x86EncodeAddr32:
   mov     ebx, [.baseReg]
  .NoBaseReg:
 
+; BUG: Base shows as register EAX when index register is specified - Begin
   ; If baseReg is ESP, or indexReg is specified, modify ModRM and SIB
   cmp     ebx, x86RegESP
   je      .EncodeSIB
   test    edx, edx
   jnz     .EncodeSIB
-  jmp     .NotSIB
+  test    edx, edx
+  jz      .ValidateScale
+  ;...otherwise invalid
+  jmp     .Exit
  .EncodeSIB:
+  ;...if indexReg is ESP, return false
+  cmp     edx, x86RegESP
+  je      .Exit
   mov     bl, al
   and     al, 0b11_111_000
   or      al, 0b00_00_100
@@ -402,16 +409,12 @@ x86EncodeAddr32:
   mov     [edi + INSTR_MODRM], al
   mov     [edi + INSTR_SIB], ah
   or      dword [esi], (HAS_MODRM | HAS_SIB)
- .NotSIB:
-
-  ; If indexReg is ESP, return false
-  cmp     edx, x86RegESP
-  je      .Exit
+ .NoSIB:
 
   ; Bug: x86Encode32 succeeds if scale is specified without an index register
   ; If indexReg, set index and scale
   test    edx, edx
-  jz      .CheckScale
+  jz      .ValidateScale
   mov     ebx, edx
   and     edx, mask86SubOperand
   and     ebx, mask86Operand
@@ -435,8 +438,7 @@ x86EncodeAddr32:
   cmp     ebx, 8
   je      .DoneScale
   jmp     .Exit
- .CheckScale:
-
+ .ValidateScale:
   cmp     dword [.scale], 0
   ja      .Exit
   jmp     .NoIndexReg
@@ -445,6 +447,7 @@ x86EncodeAddr32:
   mov     [edi + INSTR_SIB], ah
   or      dword [esi], (HAS_MODRM | HAS_SIB)
  .NoIndexReg:
+; BUG: Base shows as register EAX when index register is specified - End
 
   ; If displacement, or baseReg is EBP, modify ModRM
   mov     ebx, [.displacement]
@@ -459,12 +462,13 @@ x86EncodeAddr32:
   jl      .NotDisp8
   cmp     ebx, 127
   jg      .NotDisp8
-  add     al, 0b01_000_000
+  or      [edi + INSTR_MODRM], al
   or      dword [esi], HAS_DISP1
   jmp     .DoneDisp
  .NotDisp8:
+  add     al, 0b01_000_000
+  or      [edi + INSTR_MODRM], al
   or       dword [esi], (HAS_DISP1 | HAS_DISP2 | HAS_DISP3 | HAS_DISP4)
-  jmp      .TransformOperand
  .DoneDisp:
 
  ; Transform operand

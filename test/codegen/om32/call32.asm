@@ -219,7 +219,7 @@ segment .data use32
     dd 1
     dd testFailed
     dd 10
-    ; [* 4]
+    ; call [* 4]
     dd 0
     dd 0
     dd 0
@@ -229,6 +229,166 @@ segment .data use32
     dd 0
     dd shouldFail
     dd 11
+    ; call [edx * 5]
+    dd 0
+    dd 0
+    dd x86RegEDX
+    dd 5
+    dd 0
+    dd 0
+    dd 0
+    dd shouldFail
+    dd 12
+    ; call [edx * 10]
+    dd 0
+    dd 0
+    dd x86RegEDX
+    dd 10
+    dd 0
+    dd 0
+    dd 0
+    dd shouldFail
+    dd 13
+    ; call [esp]
+    dd 0
+    dd x86RegESP
+    dd 0
+    dd 0
+    dd 0
+    dd 0
+    dd 1
+    dd testFailed
+    dd 14
+    ; call [esp + 0x12]
+    dd 0
+    dd x86RegESP
+    dd 0
+    dd 0
+    dd 0x12
+    dd 0
+    dd 1
+    dd testFailed
+    dd 15
+    ; call [esp + 0x1234]
+    dd 0
+    dd x86RegESP
+    dd 0
+    dd 0
+    dd 0x1234
+    dd 0
+    dd 1
+    dd testFailed
+    dd 16
+    ; call [esp + 0x12345678]
+    dd 0
+    dd x86RegESP
+    dd 0
+    dd 0
+    dd 0x12345678
+    dd 0
+    dd 1
+    dd testFailed
+    dd 16
+    ; call [ebp]
+    dd 0
+    dd x86RegEBP
+    dd 0
+    dd 0
+    dd 0
+    dd 0
+    dd 1
+    dd testFailed
+    dd 17
+    ; call [ebp + 0x12]
+    dd 0
+    dd x86RegEBP
+    dd 0
+    dd 0
+    dd 0x12
+    dd 0
+    dd 1
+    dd testFailed
+    dd 18
+    ; call [ebp + 0x1234]
+    dd 0
+    dd x86RegEBP
+    dd 0
+    dd 0
+    dd 0x1234
+    dd 0
+    dd 1
+    dd testFailed
+    dd 19
+    ; call [ebp + 0x12345678]
+    dd 0
+    dd x86RegEBP
+    dd 0
+    dd 0
+    dd 0x12345678
+    dd 0
+    dd 1
+    dd testFailed
+    dd 20
+    ; call [ebp * 1]
+    dd 0
+    dd 0
+    dd x86RegEBP
+    dd 1
+    dd 0
+    dd 0
+    dd 1
+    dd testFailed
+    dd 21
+    ; call [ebp * 2]
+    dd 0
+    dd 0
+    dd x86RegEBP
+    dd 1
+    dd 0
+    dd 0
+    dd 1
+    dd testFailed
+    dd 22
+    ; call [ebp * 4]
+    dd 0
+    dd 0
+    dd x86RegEBP
+    dd 1
+    dd 0
+    dd 0
+    dd 1
+    dd testFailed
+    dd 23
+    ; call [ebp * 8]
+    dd 0
+    dd 0
+    dd x86RegEBP
+    dd 1
+    dd 0
+    dd 0
+    dd 1
+    dd testFailed
+    dd 24
+    ; call [ebp * 5]
+    dd 0
+    dd 0
+    dd x86RegEBP
+    dd 5
+    dd 0
+    dd 0
+    dd 0
+    dd shouldFail
+    dd 25
+    ; call [ebp * 10]
+    dd 0
+    dd 0
+    dd x86RegEBP
+    dd 10
+    dd 0
+    dd 0
+    dd 0
+    dd shouldFail
+    dd 26
   testParametersEnd:
 
 section .bss use32
