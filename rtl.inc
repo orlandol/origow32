@@ -1,3 +1,5 @@
+%ifndef INC_RTL
+%define INC_RTL
 
 %include "sys.inc"
 %include "chtable.inc"
@@ -1057,3 +1059,5 @@ segment .data use32
 ; =======
 ; Strings
 ; =======
+
+%endif

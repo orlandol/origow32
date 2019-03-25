@@ -139,6 +139,18 @@ segment .data use32
   fileHandle: dd 0
 
   testParameters:
+; call [ebp * 2]
+dd 0
+dd 0
+dd x86RegEBP
+dd 2
+dd 0
+dd 0
+dd 1
+dd testFailed
+dd 22
+  testParametersEnd:
+
     ; call [0]
     dd 0
     dd 0
@@ -343,7 +355,7 @@ segment .data use32
     dd 0
     dd 0
     dd x86RegEBP
-    dd 1
+    dd 2
     dd 0
     dd 0
     dd 1
@@ -353,7 +365,7 @@ segment .data use32
     dd 0
     dd 0
     dd x86RegEBP
-    dd 1
+    dd 4
     dd 0
     dd 0
     dd 1
@@ -363,7 +375,7 @@ segment .data use32
     dd 0
     dd 0
     dd x86RegEBP
-    dd 1
+    dd 8
     dd 0
     dd 0
     dd 1
@@ -389,6 +401,6 @@ segment .data use32
     dd 0
     dd shouldFail
     dd 26
-  testParametersEnd:
+;  testParametersEnd:
 
 section .bss use32

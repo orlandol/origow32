@@ -1,6 +1,13 @@
 %ifndef INC_SYS
 %define INC_SYS
 
+; ===========
+; Win32 types
+; ===========
+
+  %define FALSE 0
+  %define TRUE  1
+
 ; ====================
 ; Win32 error messages
 ; ====================

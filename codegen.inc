@@ -369,6 +369,7 @@ x86EncodeAddr32:
 
   ; Init ModRM from instruction buffer
   mov     al, [edi + INSTR_MODRM]
+  or      al, 0b00_000_101
   ; Init SIB to no index and no base
   mov     ah, 0b00_100_101
 
@@ -380,6 +381,7 @@ x86EncodeAddr32:
   and     ecx, mask86Operand
   cmp     ecx, x86Reg32
   jne     .Exit
+  and     al, 0b11_111_000
   or      al, bl
   mov     [edi + INSTR_MODRM], al
   or      dword [esi], HAS_MODRM
@@ -389,27 +391,21 @@ x86EncodeAddr32:
 ; BUG: Base shows as register EAX when index register is specified - Begin
   ; If baseReg is ESP, or indexReg is specified, modify ModRM and SIB
   cmp     ebx, x86RegESP
-  je      .EncodeSIB
+  je      .PromoteModRM
   test    edx, edx
-  jnz     .EncodeSIB
-  test    edx, edx
-  jz      .ValidateScale
-  ;...otherwise invalid
-  jmp     .Exit
- .EncodeSIB:
-  ;...if indexReg is ESP, return false
-  cmp     edx, x86RegESP
-  je      .Exit
+  jnz     .PromoteModRM
+  jmp     .SkipPromoteModRM
+ .PromoteModRM:
   mov     bl, al
   and     al, 0b11_111_000
-  or      al, 0b00_00_100
-  and     bl, 0b00_00_111
+  or      al, 0b00_000_100
+  and     bl, 0b00_000_111
   and     ah, 0b11_111_000
   or      ah, bl
   mov     [edi + INSTR_MODRM], al
   mov     [edi + INSTR_SIB], ah
   or      dword [esi], (HAS_MODRM | HAS_SIB)
- .NoSIB:
+ .SkipPromoteModRM:
 
   ; Bug: x86Encode32 succeeds if scale is specified without an index register
   ; If indexReg, set index and scale
@@ -424,8 +420,8 @@ x86EncodeAddr32:
   and     ah, 0b11_000_111
   shl     dl, 3
   or      ah, dl
-  mov     ebx, [.scale]
   ; ...scale
+  mov     ebx, [.scale]
   cmp     ebx, 1
   jbe     .DoneScale
   add     ah, 0b01_000_000

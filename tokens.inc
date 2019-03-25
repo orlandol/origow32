@@ -1,3 +1,5 @@
+%ifndef INC_TOKENS
+%define INC_TOKENS
 
 ; ===============
 ; Character codes
@@ -392,3 +394,5 @@
   %define x86Test   (x86Ident + 91)
   %define x86Xchg   (x86Ident + 92)
   %define x86Xor    (x86Ident + 93)
+
+%endif
