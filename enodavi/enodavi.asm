@@ -101,7 +101,7 @@ segment .data use32
     dw 255, (FG_LIGHTGRAY | BG_TEAL), 'L', (FG_LIGHTGRAY | BG_TEAL)
     dw '1', (FG_LIGHTGRAY | BG_TEAL), 255, (FG_LIGHTGRAY | BG_TEAL)
     dw 'C', (FG_LIGHTGRAY | BG_TEAL), '1', (FG_LIGHTGRAY | BG_TEAL)
-    dw '0', (FG_LIGHTGRAY | BG_TEAL)
+    dw '4', (FG_LIGHTGRAY | BG_TEAL)
     dw 255, (FG_LIGHTGRAY | BG_TEAL), '|', (FG_LIGHTGRAY | BG_TEAL)
     dw 255, (FG_LIGHTGRAY | BG_TEAL), 'C', (FG_BLACK | BG_TEAL)
     dw 'S', (FG_BLACK | BG_TEAL), 'N', (FG_LIGHTGRAY | BG_TEAL)

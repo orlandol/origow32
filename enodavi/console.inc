@@ -1,6 +1,43 @@
 %ifndef INC_CONSOLE
 %define INC_CONSOLE
 
+  ; hConsoleHandle input values
+  %define ENABLE_ECHO_INPUT             0x0004
+  %define ENABLE_EXTENDED_FLAGS         0x0080
+  %define ENABLE_INSERT_MODE            0x0020
+  %define ENABLE_LINE_INPUT             0x0002
+  %define ENABLE_MOUSE_INPUT            0x0010
+  %define ENABLE_PROCESSED_INPUT        0x0001
+  %define ENABLE_QUICK_EDIT_MODE        0x0040
+  %define ENABLE_WINDOW_INPUT           0x0008
+  %define ENABLE_VIRTUAL_TERMINAL_INPUT 0x0200
+
+  ; hConsoleHandle output values
+  %define ENABLE_PROCESSED_OUTPUT            0x0001
+  %define ENABLE_WRAP_AT_EOL_OUTPUT          0x0002
+  %define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+  %define DISABLE_NEWLINE_AUTO_RETURN        0x0008
+  %define ENABLE_LVB_GRID_WORLDWIDE          0x0010
+
+  ;
+  ; BOOL WINAPI GetConsoleMode( HANDLE hConsoleHandle, LPDWORD lpMode )
+  ;
+  extern GetConsoleMode
+  import GetConsoleMode kernel32.dll
+
+  ;
+  ; BOOL WINAPI SetConsoleMode( HANDLE hConsoleHandle, DWORD dwMode )
+  ;
+  extern SetConsoleMode
+  import SetConsoleMode kernel32.dll
+
+  ;
+  ; BOOL WINAPI SetConsoleCtrlHandler(
+  ;   PHANDLER_ROUTINE HandlerRoutine, BOOL Add )
+  ;
+  extern SetConsoleCtrlHandler
+  import SetConsoleCtrlHandler kernel32.dll
+
   %define CONSOLE_FULLSCREEN          1
   %define CONSOLE_FULLSCREEN_HARDWARE 2
 
