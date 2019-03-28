@@ -1,6 +1,40 @@
 %ifndef INC_CONSOLE
 %define INC_CONSOLE
 
+  ; INPUT_RECORD event types
+  %define FOCUS_EVENT              0x0010
+  %define KEY_EVENT                0x0001
+  %define MENU_EVENT               0x0008
+  %define MOUSE_EVENT              0x0002
+  %define WINDOW_BUFFER_SIZE_EVENT 0x0004
+
+  ; INPUT_RECORD and its subrecords
+  %define INPUT_RECORD_EVENTTYPE 0 ; WORD
+
+  %define KEY_EVENT_RECORD_BKEYDOWN          2  ; BOOL
+  %define KEY_EVENT_RECORD_WREPEATCOUNT      6  ; WORD
+  %define KEY_EVENT_RECORD_WVIRTUAOLKEYCODE  8  ; WORD
+  %define KEY_EVENT_RECORD_UNICODECHAR       10 ; WCHAR
+  %define KEY_EVENT_RECORD_ASCIICHAR         10 ; CHAR
+  %define KEY_EVENT_RECORD_DWCONTROLKEYSTATE 12 ; DWORD
+
+  %define MOUSE_EVENT_RECORD_DWMOUSEPOSITION   2 ; COORD
+  %define MOUSE_EVENT_RECORD_DWMOUSEPOSITION_X 2 ; SHORT
+  %define MOUSE_EVENT_RECORD_DWMOUSEPOSITION_Y 4 ; SHORT
+  %define MOUSE_EVENT_RECORD_DWBUTTONSTATE     6 ; DWORD
+  %define MOUSE_EVENT_RECORD_DWCONTROLKEYSTATE 10 ; DWORD
+  %define MOUSE_EVENT_RECORD_DWEVENTFLAGS      14 ; DWORD
+
+  %define WINDOW_BUFFER_SIZE_RECORD_DWSIZE   2 ; COORD
+  %define WINDOW_BUFFER_SIZE_RECORD_DWSIZE_X 2 ; SHORT
+  %define WINDOW_BUFFER_SIZE_RECORD_DWSIZE_Y 2 ; SHORT
+
+  %define MENU_EVENT_RECORD_DWCOMMANDID 2 ; UINT
+
+  %define FOCUS_EVENT_RECORD_BSETFOCUS 2 ; BOOL
+
+  %define SIZEOF_INPUT_RECORD 16
+
   ; hConsoleHandle input values
   %define ENABLE_ECHO_INPUT             0x0004
   %define ENABLE_EXTENDED_FLAGS         0x0080
@@ -30,6 +64,12 @@
   ;
   extern SetConsoleMode
   import SetConsoleMode kernel32.dll
+
+  %define CTRL_C_EVENT        0
+  %define CTRL_BREAK_EVENT    1
+  %define CTRL_CLOSE_EVENT    2
+  %define CTRL_LOGOFF_EVENT   5
+  %define CTRL_SHUTDOWN_EVENT 6
 
   ;
   ; BOOL WINAPI SetConsoleCtrlHandler(
