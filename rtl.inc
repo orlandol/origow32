@@ -284,7 +284,7 @@ alloc:
   ret 4
 
 ;
-; func @ realloc( @pointer; usize newSize )
+; func bool realloc( @pointer; usize newSize )
 ;
 realloc:
   push    ebp
@@ -917,7 +917,7 @@ fsize:
   ret 4
 
 ;
-; func bool fmarkeof( file handle )
+; func bool fseteof( file handle )
 ;
 fseteof:
   push    ebp
